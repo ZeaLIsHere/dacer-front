@@ -1,33 +1,35 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import CreateStoreModal from '../components/CreateStoreModal'
-import SubscriptionModal from '../components/SubscriptionModal'
-import SubscriptionStatus from '../components/SubscriptionStatus'
-import { 
-  Settings as SettingsIcon, 
-  Globe,
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import CreateStoreModal from "../components/CreateStoreModal";
+import SubscriptionModal from "../components/SubscriptionModal";
+import SubscriptionStatus from "../components/SubscriptionStatus";
+import {
+  Settings as SettingsIcon,
   Smartphone,
   Plus,
   ChevronRight,
   Store,
-  Crown
-} from 'lucide-react'
+  Crown,
+} from "lucide-react";
 
-export default function Settings () {
+export default function Settings() {
   // Language selection removed — settings page is now focused on subscription status
-  const [showCreateStoreModal, setShowCreateStoreModal] = useState(false)
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
-  const getText = (id) => id
+  const [showCreateStoreModal, setShowCreateStoreModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const getText = (id) => id;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-secondary mb-2">
-          {getText('Status Langganan', 'Subscription Status')}
+          {getText("Status Langganan", "Subscription Status")}
         </h1>
         <p className="text-gray-600">
-          {getText('Kelola status dan opsi berlangganan Anda', 'Manage your subscription status and options')}
+          {getText(
+            "Kelola status dan opsi berlangganan Anda",
+            "Manage your subscription status and options",
+          )}
         </p>
       </div>
 
@@ -44,10 +46,13 @@ export default function Settings () {
           </div>
           <div>
             <h3 className="text-lg font-bold text-secondary">
-              {getText('Berlangganan Premium', 'Premium Subscription')}
+              {getText("Berlangganan Premium", "Premium Subscription")}
             </h3>
             <p className="text-sm text-gray-600">
-              {getText('Akses penuh fitur AI untuk bisnis Anda', 'Full access to AI features for your business')}
+              {getText(
+                "Akses penuh fitur AI untuk bisnis Anda",
+                "Full access to AI features for your business",
+              )}
             </p>
           </div>
         </div>
@@ -68,10 +73,13 @@ export default function Settings () {
           </div>
           <div>
             <h3 className="text-lg font-bold text-secondary">
-              {getText('Manajemen Toko', 'Store Management')}
+              {getText("Manajemen Toko", "Store Management")}
             </h3>
             <p className="text-sm text-gray-600">
-              {getText('Kelola beberapa toko dalam satu akun', 'Manage multiple stores in one account')}
+              {getText(
+                "Kelola beberapa toko dalam satu akun",
+                "Manage multiple stores in one account",
+              )}
             </p>
           </div>
         </div>
@@ -89,10 +97,13 @@ export default function Settings () {
             </div>
             <div className="text-left">
               <p className="font-medium">
-                {getText('Buat Toko Baru', 'Create New Store')}
+                {getText("Buat Toko Baru", "Create New Store")}
               </p>
               <p className="text-sm opacity-90">
-                {getText('Tambah toko untuk bisnis yang berbeda', 'Add store for different business')}
+                {getText(
+                  "Tambah toko untuk bisnis yang berbeda",
+                  "Add store for different business",
+                )}
               </p>
             </div>
           </div>
@@ -107,7 +118,7 @@ export default function Settings () {
             </div>
             <div>
               <p className="font-medium text-secondary">
-                {getText('Toko Saat Ini', 'Current Store')}
+                {getText("Toko Saat Ini", "Current Store")}
               </p>
               <p className="text-sm text-gray-600">DagangCerdas - Toko Utama</p>
             </div>
@@ -130,12 +141,12 @@ export default function Settings () {
           </div>
           <h4 className="font-semibold text-secondary">DagangCerdas</h4>
           <p className="text-sm text-gray-600">
-            {getText('Versi 1.0.0', 'Version 1.0.0')}
+            {getText("Versi 1.0.0", "Version 1.0.0")}
           </p>
           <p className="text-xs text-gray-500">
             {getText(
-              'Aplikasi kasir pintar untuk bisnis Anda',
-              'Smart cashier app for your business'
+              "Aplikasi kasir pintar untuk bisnis Anda",
+              "Smart cashier app for your business",
             )}
           </p>
         </div>
@@ -151,21 +162,23 @@ export default function Settings () {
         <div className="flex items-start space-x-3">
           <SettingsIcon className="w-5 h-5 text-blue-600 mt-1" />
           <div>
-              <h4 className="font-semibold text-blue-800 mb-2">
-              {getText('Catatan Status Langganan', 'Subscription Note')}
+            <h4 className="font-semibold text-blue-800 mb-2">
+              {getText("Catatan Status Langganan", "Subscription Note")}
             </h4>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>
-                • {getText(
-                  'Pengaturan akan disimpan secara lokal di perangkat Anda',
-                  'Settings will be saved locally on your device'
+                •{" "}
+                {getText(
+                  "Pengaturan akan disimpan secara lokal di perangkat Anda",
+                  "Settings will be saved locally on your device",
                 )}
               </li>
               {/* Language change note removed */}
               <li>
-                • {getText(
-                  'Setiap toko memiliki data terpisah dan dapat dikelola secara independen',
-                  'Each store has separate data and can be managed independently'
+                •{" "}
+                {getText(
+                  "Setiap toko memiliki data terpisah dan dapat dikelola secara independen",
+                  "Each store has separate data and can be managed independently",
                 )}
               </li>
             </ul>
@@ -174,16 +187,16 @@ export default function Settings () {
       </motion.div>
 
       {/* Create Store Modal */}
-      <CreateStoreModal 
+      <CreateStoreModal
         isOpen={showCreateStoreModal}
         onClose={() => setShowCreateStoreModal(false)}
       />
 
       {/* Subscription Modal */}
-      <SubscriptionModal 
+      <SubscriptionModal
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
       />
     </div>
-  )
+  );
 }

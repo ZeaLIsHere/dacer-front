@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDfaha1ApDq1Y-tFHew9OkTzEHhqzVirMY",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "hackathon-dagangcers.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "hackathon-dagangcers",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "hackathon-dagangcers.firebasestorage.app",
