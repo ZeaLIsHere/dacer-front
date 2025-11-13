@@ -13,6 +13,7 @@ import LoadingSpinner from './components/LoadingSpinner'
 import ToastContainer from './components/ToastContainer'
 import { useToast } from './contexts/ToastContext'
 import './index.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
 // Lazy load pages for code splitting
 const Login = lazy(() => import('./pages/Login'))
@@ -27,6 +28,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 const TodayRevenue = lazy(() => import('./pages/TodayRevenue'))
 const CollectiveShopping = lazy(() => import('./pages/CollectiveShopping'))
 const ChatbotPage = lazy(() => import('./pages/ChatbotPage'))
+const LocationPage = lazy(() => import('./pages/LocationPage'))
 
 // Inner App component that uses toast context
 function AppContent () {
@@ -105,6 +107,13 @@ function AppContent () {
             <PrivateRoute>
               <Layout>
                 <ChatbotPage />
+              </Layout>
+            </PrivateRoute>
+          } />
+          <Route path="/location" element={
+            <PrivateRoute>
+              <Layout>
+                <LocationPage />
               </Layout>
             </PrivateRoute>
           } />

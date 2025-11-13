@@ -14,9 +14,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@maptiler/sdk": "^3.8.0",
     "firebase": "^10.5.0",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.288.0",
+    "maplibre-gl": "^5.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0"

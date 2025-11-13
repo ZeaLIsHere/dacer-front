@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { db } from '../config/firebase'
 import { collection, addDoc } from 'firebase/firestore'
+import LocationPicker from './LocationPicker'
 import { validateStoreData } from '../utils/firebaseTest'
-import { 
+import {
   Store, 
   MapPin, 
   Phone, 
@@ -12,7 +13,8 @@ import {
   Save,
   Building,
   User,
-  CheckCircle
+  CheckCircle,
+  MapPin as MapPinIcon
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 
@@ -26,8 +28,37 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
     address: '',
     phone: '',
     email: userEmail || '',
-    description: ''
+    description: '',
+    location: {
+      lat: -6.1751, // Default to Jakarta
+      lng: 106.8272
+    }
   })
+  const [showMap, setShowMap] = useState(false)
+  const [isGeocoding, setIsGeocoding] = useState(false)
+
+  // Fungsi untuk mendapatkan alamat dari koordinat (reverse geocoding)
+  const getAddressFromCoordinates = async (lat, lng) => {
+    try {
+      setIsGeocoding(true)
+      const response = await fetch(
+        `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=Nywl23O7mN6Ol38RtL5g`
+      )
+      const data = await response.json()
+      
+      if (data.features && data.features.length > 0) {
+        // Ambil alamat terbaik dari hasil geocoding
+        const address = data.features[0].place_name
+        return address
+      }
+      return null
+    } catch (error) {
+      console.error('Error getting address:', error)
+      return null
+    } finally {
+      setIsGeocoding(false)
+    }
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -82,8 +113,8 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
       }
       
       // Try creating the store document
-  await addDoc(collection(db, 'stores'), storeDataWithTimestamp)
-  showSuccess(`Toko berhasil dibuat: ${sanitizedData.storeName}`)
+      await addDoc(collection(db, 'stores'), storeDataWithTimestamp)
+      showSuccess(`Toko berhasil dibuat: ${sanitizedData.storeName}`)
       onComplete()
     } catch (error) {
       console.error('Detailed error creating store:', error)
@@ -200,15 +231,73 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
                   <MapPin className="w-4 h-4 inline mr-2" />
                   Alamat Toko *
                 </label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                  rows="3"
-                  placeholder="Alamat lengkap toko"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    className="input-field w-full pr-10"
+                    rows="3"
+                    placeholder="Alamat lengkap toko"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowMap(!showMap)}
+                    className="absolute right-2 top-2 p-1.5 text-gray-500 hover:text-blue-600 transition-colors"
+                    title="Pilih lokasi di peta"
+                  >
+                    <MapPinIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                {showMap && (
+                  <div className="mt-3 border rounded-lg overflow-hidden">
+                    <div className="h-64">
+                      <LocationPicker 
+                        onLocationSelect={async (location) => {
+                          // Update koordinat
+                          setFormData(prev => ({
+                            ...prev,
+                            location: {
+                              lat: location.lat,
+                              lng: location.lng
+                            }
+                          }));
+                          
+                          // Dapatkan alamat dari koordinat
+                          const address = await getAddressFromCoordinates(location.lat, location.lng);
+                          if (address) {
+                            setFormData(prev => ({
+                              ...prev,
+                              address: address
+                            }));
+                          }
+                        }}
+                        initialLocation={formData.location}
+                      />
+                    </div>
+                    <div className="p-3 bg-gray-50 text-sm text-gray-600 border-t">
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div>
+                          <span className="font-medium">Latitude:</span> {formData.location.lat.toFixed(6)}
+                        </div>
+                        <div>
+                          <span className="font-medium">Longitude:</span> {formData.location.lng.toFixed(6)}
+                        </div>
+                      </div>
+                      {isGeocoding && (
+                        <div className="text-blue-600 text-xs flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Mencari alamat...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Phone */}
