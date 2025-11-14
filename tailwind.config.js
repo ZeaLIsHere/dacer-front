@@ -8,55 +8,55 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Warm & Emotional Color Palette for Ultra-Micro Entrepreneurs
+        // Cool & Professional Blue Palette
         primary: {
-          DEFAULT: '#FF6B35',    // Warm Orange - Energy & Positivity
-          light: '#FF8A65',      // Lighter Orange - Gentle & Approachable
-          dark: '#E55A2B'       // Darker Orange - Trust & Reliability
+          DEFAULT: '#3B82F6',    // Bright Blue - Trust & Energy
+          light: '#60A5FA',      // Lighter Blue - Friendly & Clear
+          dark: '#2563EB'        // Deep Blue - Confidence & Strength
         },
         secondary: {
-          DEFAULT: '#227337',    // Fresh Green - Growth & Success
-          light: '#58D68D',      // Light Green - Optimism
-          dark: '#27AE60'       // Dark Green - Stability
+          DEFAULT: '#1E3A8A',    // Navy Blue - Stability & Professionalism
+          light: '#3B82F6',      // Bright Blue for accents
+          dark: '#1E40AF'        // Deep Navy for focus
         },
         accent: {
-          DEFAULT: '#F39C12',    // Golden Yellow - Warmth & Prosperity
-          light: '#F7DC6F',      // Light Yellow - Cheerfulness
-          dark: '#D68910'       // Dark Yellow - Wisdom
+          DEFAULT: '#38BDF8',    // Sky Blue - Highlights
+          light: '#BAE6FD',      // Soft Light Blue
+          dark: '#0284C7'        // Vibrant Blue Accent
         },
-        success: '#227337',      // Success Green
-        warning: '#F39C12',      // Warm Warning
-        error: '#E74C3C',        // Soft Red - Not Harsh
-        info: '#3498DB',         // Friendly Blue
+        success: '#22C55E',      // Fresh Green - Success
+        warning: '#FACC15',      // Soft Yellow - Caution
+        error: '#EF4444',        // Calm Red - Error
+        info: '#3B82F6',         // Blue - Info tone
         
-        // Background Colors - Warm & Comfortable
+        // Background Colors - Cool & Clean
         background: {
-          DEFAULT: '#FEF9F7',    // Warm Cream - Cozy & Inviting
-          secondary: '#F8F4F0'  // Soft Beige - Gentle
+          DEFAULT: '#F8FAFC',    // Very Light Blue Gray
+          secondary: '#F1F5F9'   // Slightly Darker Blue Gray
         },
         surface: {
-          DEFAULT: '#FFFFFF',    // Pure White - Clean & Trustworthy
-          warm: '#FFF8F5'       // Warm White - Soft & Welcoming
+          DEFAULT: '#FFFFFF',    // Pure White
+          cool: '#F9FAFB'        // Cool White tone
         },
         
-        // Text Colors - Readable & Friendly
-        'text-primary': '#2C3E50',    // Deep Blue-Gray - Professional but Warm
-        'text-secondary': '#7F8C8D',  // Soft Gray - Gentle & Non-intimidating
-        'text-muted': '#BDC3C7',      // Light Gray - Subtle
-        'text-accent': '#E67E22',     // Warm Orange - Highlights
+        // Text Colors - Readable & Calm
+        'text-primary': '#1E293B',    // Slate Gray - Readable
+        'text-secondary': '#475569',  // Softer Gray
+        'text-muted': '#94A3B8',      // Muted Blue-Gray
+        'text-accent': '#3B82F6',     // Blue accent for highlights
         
-        // Border & Divider Colors - Soft & Welcoming
+        // Border & Divider Colors - Subtle Blues
         border: {
-          DEFAULT: '#F4E4D6',    // Warm Beige - Soft Dividers
-          light: '#F9F1E8',      // Very Light Beige - Subtle
-          dark: '#E8D5C4'       // Darker Beige - Definition
+          DEFAULT: '#E2E8F0',    // Soft Blue-Gray Divider
+          light: '#F1F5F9',      // Very Light Blue
+          dark: '#CBD5E1'        // Darker Border
         },
         
-        // Shadow Colors - Warm & Soft
+        // Shadow Colors - Cool & Soft
         shadow: {
-          DEFAULT: 'rgba(255, 107, 53, 0.1)',    // Warm Orange Shadow
-          light: 'rgba(255, 107, 53, 0.05)',     // Very Light Shadow
-          dark: 'rgba(255, 107, 53, 0.2)'       // Deeper Shadow
+          DEFAULT: 'rgba(59, 130, 246, 0.1)',   // Blue Shadow
+          light: 'rgba(59, 130, 246, 0.05)',    // Light Blue Shadow
+          dark: 'rgba(59, 130, 246, 0.2)'       // Deeper Blue Shadow
         }
       },
       fontFamily: {

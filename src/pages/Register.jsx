@@ -51,7 +51,7 @@ export default function Register () {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-accent flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -60,10 +60,10 @@ export default function Register () {
       >
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
               <Store className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-secondary mb-2">Daftar Akun Baru</h1>
+            <h1 className="text-2xl font-bold text-blue-700 mb-2">Daftar Akun Baru</h1>
             <p className="text-gray-600">Buat akun dan setup toko untuk memulai bisnis</p>
           </div>
 
@@ -137,7 +137,7 @@ export default function Register () {
               whileTap={{ scale: 0.98 }}
               disabled={loading}
               type="submit"
-              className="w-full btn-primary"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md transition-colors"
             >
               {loading ? 'Mendaftar...' : 'Daftar & Setup Toko'}
             </motion.button>
@@ -146,7 +146,7 @@ export default function Register () {
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Sudah punya akun?{' '}
-              <Link to="/login" className="text-primary hover:text-accent font-medium">
+              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
                 Masuk di sini
               </Link>
             </p>

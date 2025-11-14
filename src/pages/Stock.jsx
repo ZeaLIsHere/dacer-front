@@ -50,7 +50,6 @@ export default function Stock () {
       console.error('Error fetching products:', error)
       setLoading(false)
       
-      // Show user-friendly error message
       if (error.code === 'permission-denied') {
         console.log('Permission denied for products collection')
       }
@@ -92,22 +91,15 @@ export default function Stock () {
     setDeleteLoading(true)
     try {
       await deleteDoc(doc(db, 'products', productToDelete.id))
-      
-      // Close modal and reset state
       setShowDeleteModal(false)
       setProductToDelete(null)
-      
-      // Optional: Show success message
-      // You can add a toast notification here instead of alert
       setTimeout(() => {
         alert(`✅ Produk "${productToDelete.nama}" berhasil dihapus dari sistem.`)
       }, 300)
-      
     } catch (error) {
       console.error('Error deleting product:', error)
       alert('❌ Gagal menghapus produk. Silakan coba lagi.')
     }
-    
     setDeleteLoading(false)
   }
 
@@ -118,15 +110,15 @@ export default function Stock () {
 
   const getStockStatus = (stock) => {
     if (stock === 0) return { label: 'Habis', color: 'text-red-600 bg-red-50' }
-    if (stock <= 5) return { label: 'Menipis', color: 'text-yellow-600 bg-yellow-50' }
-    if (stock <= 20) return { label: 'Normal', color: 'text-blue-600 bg-blue-50' }
+    if (stock <= 5) return { label: 'Menipis', color: 'text-blue-600 bg-blue-50' } // 🔵 diganti biru
+    if (stock <= 20) return { label: 'Normal', color: 'text-blue-700 bg-blue-100' } // 🔵
     return { label: 'Banyak', color: 'text-green-600 bg-green-50' }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -135,11 +127,11 @@ export default function Stock () {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-secondary mb-2">Manajemen Stok</h1>
+        <h1 className="text-2xl font-bold text-blue-700 mb-2">Manajemen Stok</h1>
         <p className="text-gray-600">Kelola stok produk Anda</p>
       </div>
 
-      {/* Search - Mobile Optimized */}
+      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
         <input
@@ -147,7 +139,7 @@ export default function Stock () {
           placeholder="Cari produk atau kategori..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-4 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm"
+          className="w-full pl-10 pr-4 py-4 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white shadow-sm"
         />
       </div>
 
@@ -158,7 +150,7 @@ export default function Stock () {
             <Package className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-gray-600">Total Produk</p>
-          <p className="text-lg font-bold text-secondary">{products.length}</p>
+          <p className="text-lg font-bold text-blue-700">{products.length}</p>
         </div>
 
         <div className="card text-center">
@@ -172,11 +164,11 @@ export default function Stock () {
         </div>
 
         <div className="card text-center">
-          <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <AlertTriangle className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-gray-600">Stok Menipis</p>
-          <p className="text-lg font-bold text-yellow-600">
+          <p className="text-lg font-bold text-blue-600">
             {products.filter(p => p.stok > 0 && p.stok <= 5).length}
           </p>
         </div>
@@ -204,7 +196,6 @@ export default function Stock () {
           </p>
         </div>
       ) : (
-        // Compact 2-column grid for mobile: two cards side-by-side, then next row
         <div className="grid grid-cols-2 gap-3">
           {filteredProducts.map((product, index) => {
             const stockStatus = getStockStatus(product.stok)
@@ -219,12 +210,13 @@ export default function Stock () {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pr-2">
-                    <h3 className="font-semibold text-secondary text-sm truncate">{product.nama}</h3>
-                    <p className="text-xs text-primary font-bold">Rp {product.harga.toLocaleString('id-ID')}</p>
+                    <h3 className="font-semibold text-blue-700 text-sm truncate">{product.nama}</h3>
+                    <p className="text-xs text-blue-600 font-bold">Rp {product.harga.toLocaleString('id-ID')}</p>
                     <p className="text-xs text-gray-500">Stok: {product.stok} {product.satuan}</p>
                   </div>
-
-                  <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.color}`}>{stockStatus.label}</span>
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.color}`}>
+                    {stockStatus.label}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2 mt-3">
@@ -242,7 +234,7 @@ export default function Stock () {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleStockUpdate(product)}
-                    className="flex-1 flex items-center justify-center px-2 py-2 bg-primary text-white rounded-md text-sm font-semibold"
+                    className="flex-1 flex items-center justify-center px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold"
                     aria-label={`Tambah stok ${product.nama}`}
                   >
                     <Plus size={16} />
@@ -288,7 +280,6 @@ export default function Stock () {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
         onClose={cancelDelete}

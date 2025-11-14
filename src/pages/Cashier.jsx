@@ -51,21 +51,18 @@ export default function Cashier () {
   useEffect(() => {
     let filtered = products
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(product =>
         product.nama.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
-    // Filter by category
     if (selectedCategory !== 'Semua') {
       filtered = filtered.filter(product => 
         (product.kategori || 'Umum') === selectedCategory
       )
     }
 
-    // Only show products with stock
     filtered = filtered.filter(product => product.stok > 0)
 
     setFilteredProducts(filtered)
@@ -73,8 +70,6 @@ export default function Cashier () {
 
   const handleCheckout = () => {
     if (cart.items.length === 0) return
-    
-    // Close cart modal and open checkout modal
     setShowCart(false)
     setShowCheckout(true)
   }
@@ -82,7 +77,7 @@ export default function Cashier () {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B72FF]"></div>
       </div>
     )
   }
@@ -91,15 +86,18 @@ export default function Cashier () {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Kasir</h1>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Pilih produk untuk dijual</p>
+        <h1 className="text-2xl font-bold text-[#1E3A8A]">Kasir</h1>
+        <p className="text-[#6B7280]">Pilih produk untuk dijual</p>
       </div>
 
       {/* Search and Filter */}
       <div className="space-y-4">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" size={20} style={{ color: 'var(--color-text-secondary)' }} />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280]"
+            size={20}
+          />
           <input
             type="text"
             placeholder="Cari produk..."
@@ -107,16 +105,16 @@ export default function Cashier () {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent"
             style={{ 
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
-              color: 'var(--color-text-primary)'
+              borderColor: '#D1D5DB',
+              backgroundColor: '#F9FAFB',
+              color: '#1F2937'
             }}
             onFocus={(e) => {
-              e.target.style.borderColor = 'var(--color-primary)'
-              e.target.style.boxShadow = '0 0 0 2px rgba(255, 122, 0, 0.1)'
+              e.target.style.borderColor = '#3B72FF'
+              e.target.style.boxShadow = '0 0 0 2px rgba(59, 114, 255, 0.2)'
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = 'var(--color-border)'
+              e.target.style.borderColor = '#D1D5DB'
               e.target.style.boxShadow = 'none'
             }}
           />
@@ -124,7 +122,7 @@ export default function Cashier () {
 
         {/* Category Filter */}
         <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-          <Filter className="flex-shrink-0" size={20} style={{ color: 'var(--color-text-secondary)' }} />
+          <Filter className="flex-shrink-0 text-[#6B7280]" size={20} />
           {categories.map(category => (
             <motion.button
               key={category}
@@ -137,8 +135,8 @@ export default function Cashier () {
                   : 'hover:opacity-80'
               }`}
               style={{
-                backgroundColor: selectedCategory === category ? 'var(--color-primary)' : 'var(--color-border)',
-                color: selectedCategory === category ? 'white' : 'var(--color-text-primary)'
+                backgroundColor: selectedCategory === category ? '#3B72FF' : '#E5E7EB',
+                color: selectedCategory === category ? 'white' : '#1F2937'
               }}
             >
               {category}
@@ -150,14 +148,14 @@ export default function Cashier () {
       {/* Products Grid */}
       {filteredProducts.length === 0 ? (
         <div className="text-center py-12">
-          <ShoppingCart className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-secondary)', opacity: 0.5 }} />
-          <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-[#9CA3AF]" />
+          <h3 className="text-lg font-medium mb-2 text-[#6B7280]">
             {searchTerm || selectedCategory !== 'Semua' 
               ? 'Tidak ada produk yang sesuai' 
               : 'Tidak ada produk tersedia'
             }
           </h3>
-          <p style={{ color: 'var(--color-text-secondary)', opacity: 0.7 }}>
+          <p className="text-[#9CA3AF] opacity-70">
             {searchTerm || selectedCategory !== 'Semua'
               ? 'Coba ubah pencarian atau filter'
               : 'Tambahkan produk di halaman Dashboard'
@@ -193,14 +191,14 @@ export default function Cashier () {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowCart(true)}
-        className="fixed bottom-24 right-4 bg-primary text-white p-4 rounded-full shadow-lg z-40"
+        className="fixed bottom-24 right-4 bg-[#3B72FF] text-white p-4 rounded-full shadow-lg z-40"
       >
         <ShoppingCart size={24} />
         {getTotalItems() > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold"
+            className="absolute -top-2 -right-2 bg-[#2563EB] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold"
           >
             {getTotalItems()}
           </motion.span>

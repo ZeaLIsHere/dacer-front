@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 
 export default function Settings () {
-  // Language selection removed — settings page is now focused on subscription status
   const [showCreateStoreModal, setShowCreateStoreModal] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const getText = (id) => id
@@ -23,7 +22,7 @@ export default function Settings () {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-secondary mb-2">
+        <h1 className="text-2xl font-bold text-blue-700 mb-2">
           {getText('Status Langganan', 'Subscription Status')}
         </h1>
         <p className="text-gray-600">
@@ -39,11 +38,11 @@ export default function Settings () {
         className="card"
       >
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-400 rounded-lg flex items-center justify-center">
             <Crown className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-secondary">
+            <h3 className="text-lg font-bold text-blue-700">
               {getText('Berlangganan Premium', 'Premium Subscription')}
             </h3>
             <p className="text-sm text-gray-600">
@@ -67,7 +66,7 @@ export default function Settings () {
             <Smartphone className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-secondary">
+            <h3 className="text-lg font-bold text-blue-700">
               {getText('Manajemen Toko', 'Store Management')}
             </h3>
             <p className="text-sm text-gray-600">
@@ -81,7 +80,7 @@ export default function Settings () {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowCreateStoreModal(true)}
-          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-primary to-accent text-white rounded-lg"
+          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md"
         >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
@@ -102,11 +101,11 @@ export default function Settings () {
         {/* Current Store Info */}
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Store className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="font-medium text-secondary">
+              <p className="font-medium text-blue-700">
                 {getText('Toko Saat Ini', 'Current Store')}
               </p>
               <p className="text-sm text-gray-600">DagangCerdas - Toko Utama</p>
@@ -114,8 +113,6 @@ export default function Settings () {
           </div>
         </div>
       </motion.div>
-
-      {/* Language selection removed — the page now focuses on subscription status */}
 
       {/* App Info */}
       <motion.div
@@ -125,10 +122,10 @@ export default function Settings () {
         className="card bg-gray-50"
       >
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto">
             <SettingsIcon className="w-6 h-6 text-white" />
           </div>
-          <h4 className="font-semibold text-secondary">DagangCerdas</h4>
+          <h4 className="font-semibold text-blue-700">DagangCerdas</h4>
           <p className="text-sm text-gray-600">
             {getText('Versi 1.0.0', 'Version 1.0.0')}
           </p>
@@ -151,7 +148,7 @@ export default function Settings () {
         <div className="flex items-start space-x-3">
           <SettingsIcon className="w-5 h-5 text-blue-600 mt-1" />
           <div>
-              <h4 className="font-semibold text-blue-800 mb-2">
+            <h4 className="font-semibold text-blue-800 mb-2">
               {getText('Catatan Status Langganan', 'Subscription Note')}
             </h4>
             <ul className="text-sm text-blue-700 space-y-1">
@@ -161,7 +158,6 @@ export default function Settings () {
                   'Settings will be saved locally on your device'
                 )}
               </li>
-              {/* Language change note removed */}
               <li>
                 • {getText(
                   'Setiap toko memiliki data terpisah dan dapat dikelola secara independen',

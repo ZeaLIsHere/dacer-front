@@ -16,18 +16,15 @@ export default function BurgerMenu () {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
 
-  // Close menu when clicking outside
+  // Tutup menu ketika klik di luar area
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false)
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const handleLogout = async () => {
@@ -56,15 +53,13 @@ export default function BurgerMenu () {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Burger Button */}
+      {/* Tombol Burger */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 transition-colors relative"
-        style={{ 
-          color: 'var(--color-text-secondary)'
-        }}
+        style={{ color: 'var(--color-text-secondary)' }}
         onMouseEnter={(e) => e.target.style.color = 'var(--color-primary)'}
         onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
       >
@@ -97,7 +92,7 @@ export default function BurgerMenu () {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
+            {/* Latar belakang blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -106,7 +101,7 @@ export default function BurgerMenu () {
               onClick={() => setIsOpen(false)}
             />
             
-            {/* Menu Content */}
+            {/* Konten menu */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -115,11 +110,16 @@ export default function BurgerMenu () {
               className="absolute right-0 top-12 w-72 rounded-xl shadow-lg border z-50 overflow-hidden"
               style={{
                 backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-text-secondary)'
+                borderColor: 'var(--color-border)'
               }}
             >
-              {/* User Info Header */}
-              <div className="p-4 bg-gradient-to-r from-primary to-accent text-white">
+              {/* Header User Info */}
+              <div
+                className="p-4 text-white"
+                style={{
+                  background: 'linear-gradient(90deg, #3B72FF 0%, #5B8FFF 100%)'
+                }}
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                     <User className="w-5 h-5" />
@@ -134,7 +134,7 @@ export default function BurgerMenu () {
                 </div>
               </div>
 
-              {/* Menu Items */}
+              {/* Item Menu */}
               <div className="py-2">
                 {menuItems.map((item, index) => {
                   const Icon = item.icon
@@ -150,26 +150,35 @@ export default function BurgerMenu () {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className="flex items-center space-x-3 px-4 py-3 transition-colors"
-                        style={{
-                          ':hover': {
-                            backgroundColor: 'var(--color-text-secondary)',
-                            opacity: 0.1
-                          }
-                        }}
                         onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = 'rgba(156, 163, 175, 0.1)'
+                          e.currentTarget.style.backgroundColor = 'rgba(59, 114, 255, 0.1)'
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = 'transparent'
+                          e.currentTarget.style.backgroundColor = 'transparent'
                         }}
                       >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                             style={{ backgroundColor: 'rgba(156, 163, 175, 0.2)' }}>
-                          <Icon className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(59, 114, 255, 0.15)' }}
+                        >
+                          <Icon
+                            className="w-4 h-4"
+                            style={{ color: 'var(--color-primary)' }}
+                          />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{item.label}</p>
-                          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{item.description}</p>
+                          <p
+                            className="font-medium"
+                            style={{ color: 'var(--color-text-primary)' }}
+                          >
+                            {item.label}
+                          </p>
+                          <p
+                            className="text-xs"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
+                            {item.description}
+                          </p>
                         </div>
                       </motion.div>
                     </Link>
@@ -178,7 +187,10 @@ export default function BurgerMenu () {
               </div>
 
               {/* Divider */}
-              <div className="border-t" style={{ borderColor: 'var(--color-text-secondary)' }}></div>
+              <div
+                className="border-t"
+                style={{ borderColor: 'var(--color-border)' }}
+              ></div>
 
               {/* Logout */}
               <motion.button
@@ -189,19 +201,28 @@ export default function BurgerMenu () {
                 className="w-full flex items-center space-x-3 px-4 py-3 transition-colors"
                 style={{ color: 'var(--color-error)' }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 0, 0, 0.08)'
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.backgroundColor = 'transparent'
                 }}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                     style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(255, 0, 0, 0.15)' }}
+                >
                   <LogOut className="w-4 h-4" style={{ color: 'var(--color-error)' }} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium" style={{ color: 'var(--color-error)' }}>Keluar</p>
-                  <p className="text-xs" style={{ color: 'var(--color-error)', opacity: 0.7 }}>Logout dari akun</p>
+                  <p className="font-medium" style={{ color: 'var(--color-error)' }}>
+                    Keluar
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: 'var(--color-error)', opacity: 0.7 }}
+                  >
+                    Logout dari akun
+                  </p>
                 </div>
               </motion.button>
             </motion.div>

@@ -26,7 +26,6 @@ export default function Dashboard () {
   useEffect(() => {
     if (!currentUser) return
 
-    // Listen to products
     const productsQuery = query(
       collection(db, 'products'),
       where('userId', '==', currentUser.uid)
@@ -50,7 +49,6 @@ export default function Dashboard () {
       setLoading(false)
     })
 
-    // Listen to sales
     const salesQuery = query(
       collection(db, 'sales'),
       where('userId', '==', currentUser.uid)
@@ -82,7 +80,6 @@ export default function Dashboard () {
   const handleSell = useCallback((product) => {
     if (!product) {
       showError('Produk tidak valid')
-      showError('Produk tidak valid')
       return
     }
     
@@ -92,7 +89,6 @@ export default function Dashboard () {
     }
 
     try {
-      // Add product to cart with quantity 1
       addItem({
         id: product.id,
         nama: product.nama,
@@ -100,7 +96,6 @@ export default function Dashboard () {
         satuan: product.satuan || 'pcs'
       })
       showSuccess(`${product.nama} ditambahkan ke keranjang!`)
-      // Navigate to cashier page
       navigate('/cashier')
     } catch (error) {
       console.error('Error in handleSell:', error)
@@ -138,18 +133,14 @@ export default function Dashboard () {
     }).length
   }
 
-  const getTotalProducts = () => {
-    return products.length
-  }
+  const getTotalProducts = () => products.length
 
-  const getLowStockProducts = () => {
-    return products.filter(product => product.stok <= 5)
-  }
+  const getLowStockProducts = () => products.filter(product => product.stok <= 5)
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B72FF]"></div>
       </div>
     )
   }
@@ -173,7 +164,7 @@ export default function Dashboard () {
         >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(52, 199, 89, 0.1)' }}>
-              <DollarSign className="w-5 h-5" style={{ color: 'var(--color-secondary)' }} />
+              <DollarSign className="w-5 h-5" style={{ color: '#22C55E' }} />
             </div>
             <div>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Total Pendapatan Hari Ini</p>
@@ -191,8 +182,8 @@ export default function Dashboard () {
           className="card"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 122, 255, 0.1)' }}>
-              <Package className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(59, 114, 255, 0.1)' }}>
+              <Package className="w-5 h-5" style={{ color: '#3B72FF' }} />
             </div>
             <div>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Total Produk</p>
@@ -208,8 +199,8 @@ export default function Dashboard () {
           className="card"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 122, 0, 0.1)' }}>
-              <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(59, 114, 255, 0.1)' }}>
+              <TrendingUp className="w-5 h-5" style={{ color: '#3B72FF' }} />
             </div>
             <div>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Penjualan Hari Ini</p>
@@ -228,7 +219,7 @@ export default function Dashboard () {
         >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
-              <AlertTriangle className="w-5 h-5" style={{ color: 'var(--color-error)' }} />
+              <AlertTriangle className="w-5 h-5" style={{ color: '#EF4444' }} />
             </div>
             <div>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Stok Menipis</p>
@@ -238,9 +229,7 @@ export default function Dashboard () {
         </motion.div>
       </div>
 
-      {/* Sales Insights */}
       <SalesInsights sales={sales} products={products} />
-
 
       {/* Products Section */}
       <div className="flex items-center justify-between">
@@ -250,7 +239,7 @@ export default function Dashboard () {
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowAddModal(true)}
           className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg"
-          style={{ backgroundColor: 'var(--color-primary)' }}
+          style={{ backgroundColor: '#3B72FF' }}
         >
           <Plus size={16} />
           <span>Tambah</span>
@@ -266,6 +255,7 @@ export default function Dashboard () {
           <button
             onClick={() => setShowAddModal(true)}
             className="btn-primary"
+            style={{ backgroundColor: '#3B72FF', color: 'white' }}
           >
             Tambah Produk
           </button>
@@ -285,7 +275,6 @@ export default function Dashboard () {
         </div>
       )}
 
-      {/* Add Product Modal */}
       {showAddModal && (
         <AddProductModal
           onClose={() => setShowAddModal(false)}
@@ -293,8 +282,6 @@ export default function Dashboard () {
         />
       )}
 
-
-      {/* Stock Monitor System */}
       <StockMonitorSystem />
     </div>
   )

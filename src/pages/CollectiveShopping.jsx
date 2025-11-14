@@ -50,13 +50,12 @@ export default function CollectiveShopping () {
   }, [currentUser])
   const { showSuccess, showError } = useToast()
 
-  // Integrated collective shopping function (replaces old store-based approach)
+  // Integrated collective shopping function
   const _handleCollectiveShoppingJoin = async (offer) => {
     try {
       const savings = offer.originalPrice - offer.discountedPrice
-      const orderQuantity = Math.max(offer.minOrder, Math.ceil(offer.currentStock / 2)) // Smart quantity suggestion
+      const orderQuantity = Math.max(offer.minOrder, Math.ceil(offer.currentStock / 2)) 
       
-      // Simulate collective order processing
       const orderData = {
         productId: offer.productId,
         productName: offer.productName,
@@ -66,11 +65,10 @@ export default function CollectiveShopping () {
         savings: savings * orderQuantity,
         category: offer.category,
         unit: offer.unit,
-        merchantsJoined: offer.interestedMerchants + 1, // +1 for current user
+        merchantsJoined: offer.interestedMerchants + 1,
         orderType: 'collective_purchase'
       }
 
-      // Process inventory restock
       await processInventoryRestock({
         productName: offer.productName,
         quantity: orderQuantity,
@@ -78,7 +76,6 @@ export default function CollectiveShopping () {
         category: offer.category
       })
 
-      // Add transaction record
       await addDoc(collection(db, 'transactions'), {
         userId: currentUser.uid,
         type: 'collective_purchase',
@@ -100,67 +97,15 @@ export default function CollectiveShopping () {
         }
       })
 
-      // Success message
       showSuccess(`Belanja Kolektif Berhasil! ${offer.productName} • Qty ${orderQuantity} • Hemat Rp ${orderData.savings.toLocaleString('id-ID')}`)
-
     } catch (error) {
       console.error('Error processing collective shopping:', error)
-      alert('❌ Gagal memproses belanja kolektif. Silakan coba lagi.')
-  showError('Gagal memproses belanja kolektif. Silakan coba lagi.')
-    }
-  }
-
-
-  const _handleConfirmCollectiveOrder = async (orderData) => {
-    try {
-      // 1. Save collective order to Firebase
-      const orderRef = await addDoc(collection(db, 'collectiveOrders'), {
-        ...orderData,
-        userId: currentUser.uid,
-        userEmail: currentUser.email,
-        createdAt: serverTimestamp(),
-        status: 'confirmed'
-      })
-
-      // 2. Process inventory restocking for each item
-      const restockPromises = orderData.items.map(async (item) => {
-        await processInventoryRestock(item)
-      })
-
-      await Promise.all(restockPromises)
-
-      // 3. Add transaction record for collective purchase
-      await addDoc(collection(db, 'transactions'), {
-        userId: currentUser.uid,
-        type: 'collective_purchase',
-        items: orderData.items.map(item => ({
-          nama: item.productName,
-          quantity: item.quantity,
-          harga: item.bulkPrice,
-          totalPrice: item.totalPrice
-        })),
-        totalAmount: orderData.totalAmount,
-        paymentMethod: 'collective',
-        supplier: orderData.storeName,
-        timestamp: serverTimestamp(),
-        collectiveOrderId: orderRef.id
-      })
-
-      // Show success message
-  showSuccess(`Belanja Kolektif Berhasil! ${orderData.storeName} • Total Rp ${orderData.totalAmount.toLocaleString('id-ID')}`)
-  showError('Gagal memproses belanja kolektif. Silakan coba lagi.')
-
-      // (selectedProducts state not managed in this component) - no-op
-
-    } catch (error) {
-      console.error('Error creating collective order:', error)
       showError('Gagal memproses belanja kolektif. Silakan coba lagi.')
     }
   }
 
   const processInventoryRestock = async (item) => {
     try {
-      // Check if product already exists in user's inventory
       const productsQuery = query(
         collection(db, 'products'),
         where('userId', '==', currentUser.uid),
@@ -170,7 +115,6 @@ export default function CollectiveShopping () {
       const existingProducts = await getDocs(productsQuery)
 
       if (!existingProducts.empty) {
-        // Product exists - update stock
         const existingProduct = existingProducts.docs[0]
         const currentStock = existingProduct.data().stok || 0
         const newStock = currentStock + item.quantity
@@ -182,15 +126,12 @@ export default function CollectiveShopping () {
           lastRestockPrice: item.bulkPrice,
           lastRestockSource: 'collective_purchase'
         })
-
-  // updated product stock successfully
       } else {
-        // Product doesn't exist - create new product
         const newProductData = {
           userId: currentUser.uid,
           nama: item.productName,
           kategori: item.category || 'Lainnya',
-          harga: Math.round(item.bulkPrice * 1.3), // Set selling price 30% above bulk price
+          harga: Math.round(item.bulkPrice * 1.3),
           stok: item.quantity,
           createdAt: serverTimestamp(),
           lastRestocked: serverTimestamp(),
@@ -201,7 +142,6 @@ export default function CollectiveShopping () {
         }
 
         await addDoc(collection(db, 'products'), newProductData)
-  // created new product after collective restock
       }
     } catch (error) {
       console.error(`Error processing restock for ${item.productName}:`, error)
@@ -209,17 +149,10 @@ export default function CollectiveShopping () {
     }
   }
 
-  const _calculateBulkSavings = (estimatedPrice) => {
-    // Assume 15-25% savings for bulk purchase
-    const savingsPercentage = 20
-    const savings = estimatedPrice * (savingsPercentage / 100)
-    return { savings, percentage: savingsPercentage }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     )
   }
@@ -228,7 +161,7 @@ export default function CollectiveShopping () {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-secondary mb-2">Belanja Kolektif</h1>
+        <h1 className="text-2xl font-bold text-blue-700 mb-2">Belanja Kolektif</h1>
         <p className="text-gray-600">Fitur belanja kolektif yang bertujuan untuk mendapat profit maksimal</p>
         <div className="mt-2 inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
           <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
@@ -241,21 +174,21 @@ export default function CollectiveShopping () {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50 border border-amber-200 rounded-2xl p-4"
+          className="bg-blue-50 border border-blue-200 rounded-2xl p-4"
         >
           <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="font-bold text-amber-800">Produk Perlu Restok</h3>
-              <p className="text-sm text-amber-600">Stok ≤ 5 unit - Trigger otomatis untuk penawaran kolektif</p>
+              <h3 className="font-bold text-blue-800">Produk Perlu Restok</h3>
+              <p className="text-sm text-blue-600">Stok ≤ 5 unit - Trigger otomatis untuk penawaran kolektif</p>
             </div>
           </div>
           
           <div className="flex flex-wrap gap-2">
             {myProducts.map((product, index) => (
-              <span key={index} className="px-3 py-1 bg-amber-100 text-amber-700 text-sm rounded-full">
+              <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
                 {product.nama} ({product.stok} tersisa)
               </span>
             ))}
@@ -263,18 +196,18 @@ export default function CollectiveShopping () {
         </motion.div>
       )}
 
-      {/* Collective offers cards for each low-stock product */}
+      {/* Collective offers */}
       {myProducts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {myProducts.map((product) => {
-            // Build a simple offer model for the UI
             const originalPrice = product.harga || 0
-            const discountPercentage = 20 // show 20% bulk discount by default
+            const discountPercentage = 20
             const discountedPrice = Math.round(originalPrice * (1 - discountPercentage / 100))
             const minOrder = product.batchSize && product.batchSize > 1 ? product.batchSize * 5 : 10
             const quantityToBuy = minOrder
             const savingsPerUnit = originalPrice - discountedPrice
             const totalSavings = savingsPerUnit * quantityToBuy
+            const expectedProfit = (product.harga - discountedPrice) * quantityToBuy
 
             const offer = {
               productId: product.id,
@@ -286,11 +219,8 @@ export default function CollectiveShopping () {
               currentStock: product.stok || 0,
               category: product.kategori || 'Umum',
               unit: product.satuan || 'unit',
-              interestedMerchants: 2 // placeholder
+              interestedMerchants: 2
             }
-
-            // expected profit if store resells at existing price (simple estimation)
-            const expectedProfit = (product.harga - discountedPrice) * quantityToBuy
 
             return (
               <motion.div
@@ -301,9 +231,13 @@ export default function CollectiveShopping () {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pr-3">
-                    <h3 className="font-semibold text-secondary text-lg truncate">{product.nama}</h3>
-                    <p className="text-sm text-gray-600 mt-1">Stok tersisa: <span className="font-bold">{product.stok}</span></p>
-                    <p className="text-sm text-gray-600">Harga jual saat ini: <span className="font-semibold">Rp {originalPrice.toLocaleString('id-ID')}</span></p>
+                    <h3 className="font-semibold text-blue-700 text-lg truncate">{product.nama}</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Stok tersisa: <span className="font-bold">{product.stok}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Harga jual saat ini: <span className="font-semibold">Rp {originalPrice.toLocaleString('id-ID')}</span>
+                    </p>
                   </div>
 
                   <div className="text-right">
@@ -316,20 +250,26 @@ export default function CollectiveShopping () {
                   <div>
                     <p className="text-xs text-gray-500">Harga grosir / unit</p>
                     <p className="font-semibold">Rp {discountedPrice.toLocaleString('id-ID')}</p>
-                    <p className="text-xs text-gray-500 mt-1">Minimal order: <span className="font-medium">{minOrder} {offer.unit}</span></p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Minimal order: <span className="font-medium">{minOrder} {offer.unit}</span>
+                    </p>
                   </div>
 
                   <div>
                     <p className="text-xs text-gray-500">Estimasi keuntungan jika ikut</p>
-                    <p className="font-semibold text-secondary">Rp {expectedProfit.toLocaleString('id-ID')}</p>
-                    <p className="text-xs text-gray-400">(Hemat Rp {totalSavings.toLocaleString('id-ID')} untuk {quantityToBuy} unit)</p>
+                    <p className="font-semibold text-blue-700">
+                      Rp {expectedProfit.toLocaleString('id-ID')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      (Hemat Rp {totalSavings.toLocaleString('id-ID')} untuk {quantityToBuy} unit)
+                    </p>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <button
                     onClick={() => _handleCollectiveShoppingJoin(offer)}
-                    className="btn-primary w-full text-center"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition-all"
                   >
                     Ikut Belanja
                   </button>

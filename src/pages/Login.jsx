@@ -29,32 +29,27 @@ export default function Login () {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-background)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="rounded-2xl shadow-xl p-8" style={{ backgroundColor: 'var(--color-surface)' }}>
+        <div className="rounded-2xl shadow-xl p-8 bg-white">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: 'var(--color-primary)' }}>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-blue-500">
               <Store className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>DagangCerdas</h1>
-            <p style={{ color: 'var(--color-text-secondary)' }}>Asisten Bisnis Virtual Anda</p>
+            <h1 className="text-2xl font-bold mb-2 text-blue-700">DagangCerdas</h1>
+            <p className="text-blue-500">Asisten Bisnis Virtual Anda</p>
           </div>
 
           {error && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="px-4 py-3 rounded-lg mb-6"
-              style={{ 
-                backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                border: '1px solid rgba(239, 68, 68, 0.2)', 
-                color: 'var(--color-error)' 
-              }}
+              className="px-4 py-3 rounded-lg mb-6 bg-red-100 border border-red-200 text-red-600"
             >
               {error}
             </motion.div>
@@ -62,7 +57,7 @@ export default function Login () {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              <label htmlFor="email" className="block text-sm font-medium mb-2 text-blue-700">
                 Email
               </label>
               <input
@@ -77,7 +72,7 @@ export default function Login () {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              <label htmlFor="password" className="block text-sm font-medium mb-2 text-blue-700">
                 Password
               </label>
               <div className="relative">
@@ -93,8 +88,7 @@ export default function Login () {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:opacity-70"
-                  style={{ color: 'var(--color-text-secondary)' }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-500 hover:opacity-70"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -106,16 +100,16 @@ export default function Login () {
               whileTap={{ scale: 0.98 }}
               disabled={loading}
               type="submit"
-              className="w-full btn-primary"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
             >
               {loading ? 'Masuk...' : 'Masuk'}
             </motion.button>
           </form>
 
           <div className="mt-6 text-center">
-            <p style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="text-blue-500">
               Belum punya akun?{' '}
-              <Link to="/register" className="font-medium hover:opacity-80" style={{ color: 'var(--color-primary)' }}>
+              <Link to="/register" className="font-medium text-blue-700 hover:underline">
                 Daftar sekarang
               </Link>
             </p>

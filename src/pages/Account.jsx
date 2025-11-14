@@ -108,8 +108,8 @@ export default function Account () {
     if (/[^a-zA-Z\d]/.test(password)) score++
     
     if (score < 2) return { strength: 1, text: 'Lemah', color: 'text-red-600' }
-    if (score < 4) return { strength: 2, text: 'Sedang', color: 'text-yellow-600' }
-    return { strength: 3, text: 'Kuat', color: 'text-green-600' }
+    if (score < 4) return { strength: 2, text: 'Sedang', color: 'text-amber-600' }
+    return { strength: 3, text: 'Kuat', color: 'text-blue-600' }
   }
 
   return (
@@ -174,7 +174,7 @@ export default function Account () {
         className="card"
       >
         <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
             <Store className="w-8 h-8 text-white" />
           </div>
           <div>
@@ -187,12 +187,12 @@ export default function Account () {
           <div className="space-y-4">
             {/* Offline Mode Indicator */}
             {currentStore.isTemporary && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                  <p className="text-sm font-medium text-amber-800">Mode Offline</p>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-medium text-blue-800">Mode Offline</p>
                 </div>
-                <p className="text-xs text-amber-700 mt-1">
+                <p className="text-xs text-blue-700 mt-1">
                   Data toko disimpan secara lokal. Akan disinkronkan ketika Firestore tersedia.
                 </p>
               </div>
@@ -268,15 +268,15 @@ export default function Account () {
                 <p className="text-2xl font-bold text-blue-600">{currentStore.totalProducts || 0}</p>
                 <p className="text-sm text-blue-700">Produk</p>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <p className="text-2xl font-bold text-green-600">{storeStats.totalSales || 0}</p>
-                <p className="text-sm text-green-700">Penjualan</p>
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">{storeStats.totalSales || 0}</p>
+                <p className="text-sm text-blue-700">Penjualan</p>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <p className="text-2xl font-bold text-purple-600">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">
                   Rp {(storeStats.totalRevenue || 0).toLocaleString('id-ID')}
                 </p>
-                <p className="text-sm text-purple-700">Pendapatan</p>
+                <p className="text-sm text-blue-700">Pendapatan</p>
               </div>
             </div>
           </div>
@@ -401,8 +401,8 @@ export default function Account () {
                     <div 
                       className={`h-2 rounded-full transition-all duration-300 ${
                         getPasswordStrength(passwordForm.newPassword).strength === 1 ? 'bg-red-500 w-1/3' :
-                        getPasswordStrength(passwordForm.newPassword).strength === 2 ? 'bg-yellow-500 w-2/3' :
-                        'bg-green-500 w-full'
+                        getPasswordStrength(passwordForm.newPassword).strength === 2 ? 'bg-blue-500 w-2/3' :
+                        'bg-blue-600 w-full'
                       }`}
                     />
                   </div>

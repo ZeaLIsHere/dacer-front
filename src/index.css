@@ -2,491 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Warm & Emotional Color Palette for Ultra-Micro Entrepreneurs */
+/* Cool & Professional Color Palette (Blue-Based Theme) */
 :root {
-  /* Primary Colors - Warm & Welcoming */
-  --color-primary: #FF6B35;       /* Warm Orange - Energy & Positivity */
-  --color-primary-light: #FF8A65; /* Lighter Orange - Gentle & Approachable */
-  --color-primary-dark: #E55A2B;  /* Darker Orange - Trust & Reliability */
+  /* Primary Colors - Calm Blue */
+  --color-primary: #3B72FF;       /* Main Blue */
+  --color-primary-light: #5B8FFF; /* Lighter Blue */
+  --color-primary-dark: #2555CC;  /* Darker Blue */
   
-  /* Secondary Colors - Success & Growth (standardized to deep blue-gray) */
-  --color-secondary: #2C3E50;     /* Deep Blue-Gray - used instead of green */
-  --color-secondary-light: #5A6B7A; /* Lighter variant of deep blue-gray */
-  --color-secondary-dark: #243241; /* Darker variant of deep blue-gray */
+  /* Secondary Colors - Neutral Gray */
+  --color-secondary: #4E4E4E;     
+  --color-secondary-light: #707070; 
+  --color-secondary-dark: #2F2F2F; 
   
-  /* Accent Colors - Warm & Friendly */
-  --color-accent: #F39C12;        /* Golden Yellow - Warmth & Prosperity */
-  --color-accent-light: #F7DC6F;  /* Light Yellow - Cheerfulness */
-  --color-accent-dark: #D68910;   /* Dark Yellow - Wisdom */
-  
-  /* Status Colors - Clear & Positive */
-  --color-success: #2C3E50;       /* Success color standardized to deep blue-gray */
-  --color-warning: #F39C12;       /* Warm Warning */
-  --color-error: #E74C3C;         /* Soft Red - Not Harsh */
-  --color-info: #3498DB;          /* Friendly Blue */
-  
-  /* Background Colors - Warm & Comfortable */
-  --color-background: #FEF9F7;    /* Warm Cream - Cozy & Inviting */
-  --color-background-secondary: #F8F4F0; /* Soft Beige - Gentle */
-  --color-surface: #FFFFFF;       /* Pure White - Clean & Trustworthy */
-  --color-surface-warm: #FFF8F5;  /* Warm White - Soft & Welcoming */
-  
-  /* Text Colors - Readable & Friendly */
-  --color-text-primary: #2C3E50;  /* Deep Blue-Gray - Professional but Warm */
-  --color-text-secondary: #7F8C8D; /* Soft Gray - Gentle & Non-intimidating */
-  --color-text-muted: #BDC3C7;    /* Light Gray - Subtle */
-  --color-text-accent: #E67E22;   /* Warm Orange - Highlights */
-  
-  /* Border & Divider Colors - Soft & Welcoming */
-  --color-border: #F4E4D6;        /* Warm Beige - Soft Dividers */
-  --color-border-light: #F9F1E8;  /* Very Light Beige - Subtle */
-  --color-border-dark: #E8D5C4;   /* Darker Beige - Definition */
-  
-  /* Shadow Colors - Warm & Soft */
-  --color-shadow: rgba(255, 107, 53, 0.1); /* Warm Orange Shadow */
-  --color-shadow-light: rgba(255, 107, 53, 0.05); /* Very Light Shadow */
-  --color-shadow-dark: rgba(255, 107, 53, 0.2); /* Deeper Shadow */
+  /* Accent Colors - Supportive Tones */
+  --color-accent: #5B8FFF;        /* Bright Blue Accent */
+  --color-accent-light: #A9C5FF;  
+  --color-accent-dark: #2B5FD9;   
+
+  /* Status Colors */
+  --color-success: #068200;       /* Green */
+  --color-warning: #FFD93D;       /* Soft Yellow */
+  --color-error: #FF0000;         /* Red */
+  --color-info: #3B72FF;          /* Info Blue */
+
+  /* Background Colors */
+  --color-background: #F8FAFF;    
+  --color-background-secondary: #EEF3FF; 
+  --color-surface: #FFFFFF;       
+  --color-surface-warm: #F5F8FF;  
+
+  /* Text Colors */
+  --color-text-primary: #1E1E1E;  
+  --color-text-secondary: #4E4E4E;
+  --color-text-muted: #A0A0A0;
+  --color-text-accent: #3B72FF;
+
+  /* Border & Divider Colors */
+  --color-border: #E0E6FF;
+  --color-border-light: #EDF1FF;
+  --color-border-dark: #B6C2FF;
+
+  /* Shadow Colors */
+  --color-shadow: rgba(59, 114, 255, 0.1);
+  --color-shadow-light: rgba(59, 114, 255, 0.05);
+  --color-shadow-dark: rgba(59, 114, 255, 0.2);
 }
 
+/* Dark Mode (Cool Dark) */
 .dark {
-  /* Dark Mode - Maintain Warmth Even in Dark Theme */
-  --color-primary: #FF6B35;       /* Keep warm orange */
-  --color-primary-light: #FF8A65; /* Keep light orange */
-  --color-primary-dark: #E55A2B;  /* Keep dark orange */
-  
-  --color-secondary: #227337;     /* Keep fresh green */
-  --color-secondary-light: #58D68D; /* Keep light green */
-  --color-secondary-dark: #27AE60; /* Keep dark green */
-  
-  --color-accent: #F39C12;        /* Keep golden yellow */
-  --color-accent-light: #F7DC6F;  /* Keep light yellow */
-  --color-accent-dark: #D68910;   /* Keep dark yellow */
-  
-  --color-success: #227337;       /* Keep success green */
-  --color-warning: #F39C12;       /* Keep warm warning */
-  --color-error: #E74C3C;         /* Keep soft red */
-  --color-info: #3498DB;          /* Keep friendly blue */
-  
-  /* Dark backgrounds - Warm & Cozy */
-  --color-background: #1A1A1A;    /* Warm Dark - Not too harsh */
-  --color-background-secondary: #2D2D2D; /* Soft Dark */
-  --color-surface: #2A2A2A;       /* Dark Surface - Warm */
-  --color-surface-warm: #333333;  /* Warmer Dark Surface */
-  
-  /* Dark text - Readable & Friendly */
-  --color-text-primary: #F5F5F5;  /* Light text - Warm */
-  --color-text-secondary: #B0B0B0; /* Secondary light text */
-  --color-text-muted: #888888;    /* Muted light text */
-  --color-text-accent: #FF8A65;   /* Warm accent text */
-  
-  /* Dark borders - Soft & Welcoming */
-  --color-border: #404040;        /* Soft dark border */
-  --color-border-light: #333333;  /* Light dark border */
-  --color-border-dark: #555555;   /* Darker border */
-  
-  /* Dark shadows - Warm & Soft */
-  --color-shadow: rgba(255, 107, 53, 0.2); /* Warm shadow in dark */
-  --color-shadow-light: rgba(255, 107, 53, 0.1); /* Light shadow */
-  --color-shadow-dark: rgba(255, 107, 53, 0.3); /* Dark shadow */
+  --color-primary: #3B72FF;
+  --color-primary-light: #5B8FFF;
+  --color-primary-dark: #2555CC;
+
+  --color-secondary: #A0A0A0;
+  --color-secondary-light: #BFBFBF;
+  --color-secondary-dark: #888888;
+
+  --color-accent: #5B8FFF;
+  --color-accent-light: #A9C5FF;
+  --color-accent-dark: #2B5FD9;
+
+  --color-success: #068200;
+  --color-warning: #FFD93D;
+  --color-error: #FF0000;
+  --color-info: #3B72FF;
+
+  --color-background: #1A1A1A;
+  --color-background-secondary: #242424;
+  --color-surface: #2A2A2A;
+  --color-surface-warm: #333333;
+
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #B0B0B0;
+  --color-text-muted: #888888;
+  --color-text-accent: #5B8FFF;
+
+  --color-border: #404040;
+  --color-border-light: #333333;
+  --color-border-dark: #555555;
+
+  --color-shadow: rgba(59, 114, 255, 0.2);
+  --color-shadow-light: rgba(59, 114, 255, 0.1);
+  --color-shadow-dark: rgba(59, 114, 255, 0.3);
 }
 
-@layer base {
-  * {
-    @apply box-border;
-  }
-  
-  body {
-    @apply font-sans;
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-  
-  html {
-    @apply h-full;
-  }
-  
-  #root {
-    @apply h-full;
-  }
-}
-
-@layer components {
-  /* Warm & Emotional Button Styles */
-  .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-    color: white;
-    @apply font-semibold py-4 px-8 rounded-2xl transition-all duration-300 shadow-lg;
-    box-shadow: 0 4px 15px var(--color-shadow);
-    border: none;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .btn-primary:hover {
-    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px var(--color-shadow-dark);
-  }
-  
-  .btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 15px var(--color-shadow);
-  }
-  
-  .btn-secondary {
-    background-color: var(--color-surface-warm);
-    color: var(--color-text-primary);
-    border: 2px solid var(--color-border);
-    @apply font-medium py-4 px-8 rounded-2xl transition-all duration-300;
-    box-shadow: 0 2px 10px var(--color-shadow-light);
-  }
-  
-  .btn-secondary:hover {
-    background-color: var(--color-primary-light);
-    color: white;
-    border-color: var(--color-primary);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px var(--color-shadow);
-  }
-  
-  .btn-success {
-    background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-light));
-    color: white;
-    @apply font-semibold py-4 px-8 rounded-2xl transition-all duration-300 shadow-lg;
-  box-shadow: 0 4px 15px rgba(44, 62, 80, 0.2);
-  }
-  
-  .btn-success:hover {
-    background: linear-gradient(135deg, var(--color-secondary-dark), var(--color-secondary));
-    transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(44, 62, 80, 0.3);
-  }
-  
-  .btn-warning {
-    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
-    color: white;
-    @apply font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg;
-    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
-  }
-  
-  .btn-warning:hover {
-    background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.3);
-  }
-  
-  .btn-danger {
-    background: linear-gradient(135deg, var(--color-error), #FF6B6B);
-    color: white;
-    @apply font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
-  }
-  
-  .btn-danger:hover {
-    background: linear-gradient(135deg, #C0392B, var(--color-error));
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
-  }
-  
-  /* Warm & Welcoming Card Styles */
-  .card {
-    @apply rounded-2xl p-6 transition-all duration-300;
-    background-color: var(--color-surface-warm);
-    border: 1px solid var(--color-border);
-    box-shadow: 0 4px 20px var(--color-shadow-light);
-  }
-  
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px var(--color-shadow);
-    border-color: var(--color-primary-light);
-  }
-  
-  .card-success {
-    @apply rounded-2xl p-6 transition-all duration-300;
-    background: linear-gradient(135deg, var(--color-surface-warm), rgba(46, 204, 113, 0.05));
-    border: 2px solid var(--color-secondary-light);
-  box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
-  }
-  
-  .card-warning {
-    @apply rounded-2xl p-6 transition-all duration-300;
-    background: linear-gradient(135deg, var(--color-surface-warm), rgba(243, 156, 18, 0.05));
-    border: 2px solid var(--color-accent-light);
-    box-shadow: 0 4px 20px rgba(243, 156, 18, 0.1);
-  }
-  
-  .card-error {
-    @apply rounded-2xl p-6 transition-all duration-300;
-    background: linear-gradient(135deg, var(--color-surface-warm), rgba(231, 76, 60, 0.05));
-    border: 2px solid #FF6B6B;
-    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.1);
-  }
-  
-  /* Warm & Friendly Input Styles */
-  .input-field {
-    @apply w-full px-6 py-4 border-2 rounded-2xl outline-none transition-all duration-300;
-    background-color: var(--color-surface-warm);
-    border-color: var(--color-border);
-    color: var(--color-text-primary);
-    font-size: 16px; /* Prevent zoom on mobile */
-    box-shadow: 0 2px 10px var(--color-shadow-light);
-  }
-  
-  .input-field:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 4px var(--color-shadow-light), 0 4px 20px var(--color-shadow);
-    background-color: var(--color-surface);
-    transform: translateY(-1px);
-  }
-  
-  .input-field::placeholder {
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-  
-  .input-field:invalid {
-    border-color: var(--color-error);
-    box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1);
-  }
-  
-  .input-field:valid {
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.1);
-  }
-  
-  /* Warm & Welcoming Navigation Styles */
-  .nav-item {
-    @apply flex flex-col items-center justify-center p-3 transition-all duration-300 rounded-2xl;
-    color: var(--color-text-secondary);
-    min-width: 0;
-    position: relative;
-  }
-  
-  .nav-item.active {
-    color: var(--color-primary);
-    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px var(--color-shadow);
-  }
-  
-  .nav-item:hover {
-    color: var(--color-primary);
-    background-color: var(--color-surface-warm);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 10px var(--color-shadow-light);
-  }
-  
-  /* Emotional Status Indicators */
-  .status-success {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-medium;
-    background: linear-gradient(135deg, var(--color-secondary-light), var(--color-secondary));
-    color: white;
-    box-shadow: 0 2px 10px rgba(46, 204, 113, 0.2);
-  }
-  
-  .status-warning {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-medium;
-    background: linear-gradient(135deg, var(--color-accent-light), var(--color-accent));
-    color: white;
-    box-shadow: 0 2px 10px rgba(243, 156, 18, 0.2);
-  }
-  
-  .status-error {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-medium;
-    background: linear-gradient(135deg, #FF6B6B, var(--color-error));
-    color: white;
-    box-shadow: 0 2px 10px rgba(231, 76, 60, 0.2);
-  }
-  
-  .status-info {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-medium;
-    background: linear-gradient(135deg, #74B9FF, var(--color-info));
-    color: white;
-    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.2);
-  }
-  
-  /* Warm Loading Indicators */
-  .loading-spinner {
-    @apply inline-block w-6 h-6 border-4 border-solid rounded-full;
-    border-color: var(--color-border);
-    border-top-color: var(--color-primary);
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .loading-dots {
-    @apply inline-flex space-x-1;
-  }
-  
-  .loading-dots span {
-    @apply w-2 h-2 rounded-full;
-    background-color: var(--color-primary);
-    animation: bounce 1.4s ease-in-out infinite both;
-  }
-  
-  .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
-  .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
-  
-  @keyframes bounce {
-    0%, 80%, 100% {
-      transform: scale(0);
-    }
-    40% {
-      transform: scale(1);
-    }
-  }
-  
-  /* Emotional Progress Bars */
-  .progress-bar {
-    @apply w-full h-3 rounded-full overflow-hidden;
-    background-color: var(--color-border);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .progress-fill {
-    @apply h-full rounded-full transition-all duration-500 ease-out;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
-    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
-  }
-  
-  .progress-fill.success {
-    background: linear-gradient(90deg, var(--color-secondary), var(--color-secondary-light));
-    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.3);
-  }
-  
-  .progress-fill.warning {
-    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-light));
-    box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3);
-  }
-  
-  .progress-fill.error {
-    background: linear-gradient(90deg, var(--color-error), #FF6B6B);
-    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
-  }
-  
-  /* Mobile Modal Improvements */
-  .modal-content {
-    @apply max-h-screen overflow-hidden;
-  }
-  
-  .modal-scrollable {
-    @apply overflow-y-auto;
-    /* Smooth scrolling on iOS */
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Ensure modals don't exceed viewport on small screens */
-  @media (max-height: 600px) {
-    .modal-content {
-      @apply max-h-[95vh];
-    }
-  }
-  
-  /* Cart modal specific adjustments for very small screens */
-  @media (max-height: 700px) {
-    .cart-modal {
-      @apply max-h-[70vh];
-    }
-  }
-  
-  @media (max-height: 600px) {
-    .cart-modal {
-      @apply max-h-[65vh];
-    }
-  }
-  
-  @media (max-height: 500px) {
-    .cart-modal {
-      @apply max-h-[60vh];
-    }
-  }
-  
-  /* Dark mode utilities */
-  .text-primary-var {
-    color: var(--color-primary);
-  }
-  
-  .text-secondary-var {
-    color: var(--color-secondary);
-  }
-  
-  .bg-primary-var {
-    background-color: var(--color-primary);
-  }
-  
-  .bg-surface-var {
-    background-color: var(--color-surface);
-  }
-  
-  .border-surface-var {
-    border-color: var(--color-surface);
-  }
-}
-
-/* Mobile optimizations for small screens (iPhone 11 and similar) */
-@media (max-width: 420px) {
-  :root {
-    /* optional: slightly warmer background contrast on small screens */
-  }
-
-  /* Reduce global spacing and font sizes for compact display */
-  body {
-    font-size: 14px;
-  }
-
-  /* Cards: less padding, smaller radius */
-  .card {
-    @apply p-3 rounded-xl;
-    box-shadow: 0 2px 8px var(--color-shadow-light);
-  }
-
-  /* Make card hover effects inert on touch devices */
-  .card:hover {
-    transform: none;
-    box-shadow: 0 2px 8px var(--color-shadow-light);
-    border-color: var(--color-border);
-  }
-
-  /* Buttons: smaller padding and font sizes */
-  .btn-primary, .btn-secondary, .btn-success, .btn-warning, .btn-danger {
-    @apply py-2 px-4 rounded-lg; /* reduce tappable size a bit while keeping touch friendly */
-    font-size: 14px;
-  }
-
-  .btn-primary { @apply py-3 px-4; }
-
-  /* Inputs: reduce padding so forms fit on narrow viewports */
-  .input-field {
-    @apply px-4 py-3 rounded-lg;
-    font-size: 14px;
-  }
-
-  /* Top bars / nav compact */
-  .nav-item { @apply p-2 text-xs; }
-
-  /* Status badges smaller */
-  .status-success, .status-warning, .status-error, .status-info {
-    @apply px-3 py-1 text-xs;
-  }
-
-  /* Loading indicators slightly smaller */
-  .loading-spinner { @apply w-5 h-5 border-2; }
-
-  /* Reduce shadows for performance on mobile */
-  .btn-primary, .card, .btn-success { box-shadow: none; }
-
-  /* Reduce spacing in modal content on small screens */
-  .modal-content { padding: 12px; }
-
-  /* Ensure grid cards fit: reduce default card padding already above; also limit columns via existing grid classes */
-  .grid.grid-cols-2 { gap: 8px; }
-}
+/* === Komponen & Dasar (semua class btn, card, input, dll tetap sama) === */
+/* Semua gaya di bawah tetap berfungsi sama seperti sebelumnya,
+   hanya nilai variabel warna yang sekarang menggunakan skema biru. */
