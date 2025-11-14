@@ -1,47 +1,47 @@
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, Crown, Star, CreditCard, Gift } from 'lucide-react'
-import { useSubscription } from '../contexts/SubscriptionContext'
-import { useToast } from '../contexts/ToastContext'
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Check, Crown, Star, CreditCard, Gift } from "lucide-react";
+import { useSubscription } from "../contexts/SubscriptionContext";
+import { useToast } from "../contexts/ToastContext";
 
 const SubscriptionModal = ({ isOpen, onClose }) => {
-  const { subscribe, getSubscriptionInfo, plans } = useSubscription()
-  const { showSuccess, showError } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState('yearly')
-  const [showPayment, setShowPayment] = useState(false)
+  const { subscribe, getSubscriptionInfo, plans } = useSubscription();
+  const { showSuccess, showError } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("yearly");
+  const [showPayment, setShowPayment] = useState(false);
 
-  const subscriptionInfo = getSubscriptionInfo()
+  const subscriptionInfo = getSubscriptionInfo();
 
   const handleSubscribe = async (planId) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await subscribe(planId, 'credit_card')
-      showSuccess('Berlangganan berhasil! Selamat menikmati fitur premium.')
-      onClose()
+      await subscribe(planId, "credit_card");
+      showSuccess("Berlangganan berhasil! Selamat menikmati fitur premium.");
+      onClose();
     } catch (error) {
-      showError('Gagal berlangganan. Silakan coba lagi.')
-      console.error('Subscription error:', error)
+      showError("Gagal berlangganan. Silakan coba lagi.");
+      console.error("Subscription error:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handlePayment = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      await handleSubscribe(selectedPlan)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await handleSubscribe(selectedPlan);
     } catch (error) {
-      showError('Pembayaran gagal. Silakan coba lagi.')
+      showError("Pembayaran gagal. Silakan coba lagi.");
     } finally {
-      setLoading(false)
-      setShowPayment(false)
+      setLoading(false);
+      setShowPayment(false);
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
@@ -68,7 +68,9 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">Upgrade ke Premium</h2>
-                  <p className="text-white/90">Akses penuh fitur AI untuk bisnis Anda</p>
+                  <p className="text-white/90">
+                    Akses penuh fitur AI untuk bisnis Anda
+                  </p>
                 </div>
               </div>
               <button
@@ -111,13 +113,17 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                 <p className="text-gray-600 mb-6">
                   Klik "Bayar" untuk melanjutkan proses berlangganan.
                 </p>
-                
+
                 <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-                  <h4 className="font-semibold text-gray-800 mb-4">Detail Pembayaran</h4>
+                  <h4 className="font-semibold text-gray-800 mb-4">
+                    Detail Pembayaran
+                  </h4>
                   <div className="space-y-2 text-left">
                     <div className="flex justify-between">
                       <span>Paket {plans[selectedPlan].name}</span>
-                      <span className="font-semibold">{plans[selectedPlan].priceDisplay}</span>
+                      <span className="font-semibold">
+                        {plans[selectedPlan].priceDisplay}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>Durasi</span>
@@ -126,7 +132,9 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                     {plans[selectedPlan].savings && (
                       <div className="flex justify-between text-green-600">
                         <span>Anda hemat</span>
-                        <span className="font-semibold">Rp {plans[selectedPlan].savings.toLocaleString()}</span>
+                        <span className="font-semibold">
+                          Rp {plans[selectedPlan].savings.toLocaleString()}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -149,7 +157,7 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                     ) : (
                       <CreditCard className="w-5 h-5" />
                     )}
-                    <span>{loading ? 'Memproses...' : 'Bayar Sekarang'}</span>
+                    <span>{loading ? "Memproses..." : "Bayar Sekarang"}</span>
                   </button>
                 </div>
               </div>
@@ -161,7 +169,8 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                     Pilih Paket Berlangganan
                   </h3>
                   <p className="text-gray-600">
-                    Dapatkan akses penuh ke fitur AI untuk mengembangkan bisnis Anda
+                    Dapatkan akses penuh ke fitur AI untuk mengembangkan bisnis
+                    Anda
                   </p>
                 </div>
 
@@ -172,9 +181,9 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       className={`relative rounded-2xl border-2 p-6 cursor-pointer transition-all ${
                         selectedPlan === plan.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 hover:border-primary/50'
-                      } ${plan.popular ? 'ring-2 ring-primary/20' : ''}`}
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-primary/50"
+                      } ${plan.popular ? "ring-2 ring-primary/20" : ""}`}
                       onClick={() => setSelectedPlan(plan.id)}
                     >
                       {plan.popular && (
@@ -204,16 +213,23 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                         {plan.savings && (
                           <div className="inline-flex items-center space-x-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium mt-2">
                             <Gift className="w-4 h-4" />
-                            <span>Hemat Rp {plan.savings.toLocaleString()}</span>
+                            <span>
+                              Hemat Rp {plan.savings.toLocaleString()}
+                            </span>
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-3 mb-6">
                         {plan.features.map((feature, index) => (
-                          <div key={index} className="flex items-center space-x-3">
+                          <div
+                            key={index}
+                            className="flex items-center space-x-3"
+                          >
                             <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                            <span className="text-gray-700 text-sm">{feature}</span>
+                            <span className="text-gray-700 text-sm">
+                              {feature}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -221,11 +237,11 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                       <button
                         className={`w-full py-3 rounded-xl font-semibold transition-colors ${
                           selectedPlan === plan.id
-                            ? 'bg-primary text-white hover:bg-primary-dark'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? "bg-primary text-white hover:bg-primary-dark"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
-                        {selectedPlan === plan.id ? 'Terpilih' : 'Pilih Paket'}
+                        {selectedPlan === plan.id ? "Terpilih" : "Pilih Paket"}
                       </button>
                     </motion.div>
                   ))}
@@ -239,7 +255,8 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                     Lanjutkan ke Pembayaran
                   </button>
                   <p className="text-gray-500 text-sm mt-4">
-                    * Pembayaran akan diproses secara otomatis setelah konfirmasi.
+                    * Pembayaran akan diproses secara otomatis setelah
+                    konfirmasi.
                   </p>
                 </div>
               </div>
@@ -248,7 +265,7 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  )
-}
+  );
+};
 
-export default SubscriptionModal
+export default SubscriptionModal;
