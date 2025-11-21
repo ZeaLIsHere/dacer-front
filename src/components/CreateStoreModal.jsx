@@ -11,19 +11,26 @@ import {
   Mail,
   Save,
   Building,
-  User
+  User,
+  MapPin as MapPinIcon
 } from 'lucide-react'
+import LocationPicker from './LocationPicker'
 
 export default function CreateStoreModal ({ isOpen, onClose }) {
   const { currentUser } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [showMap, setShowMap] = useState(false);
   const [formData, setFormData] = useState({
     storeName: '',
     ownerName: '',
     address: '',
     phone: '',
     email: '',
-    description: ''
+    description: '',
+    location: {
+      lat: -6.1751, // Default to Jakarta
+      lng: 106.8272
+    }
   })
 
   const handleInputChange = (e) => {
@@ -59,6 +66,11 @@ export default function CreateStoreModal ({ isOpen, onClose }) {
         phone: formData.phone?.trim().substring(0, 20) || '',
         email: formData.email?.trim().substring(0, 100) || '',
         description: formData.description?.trim().substring(0, 1000) || '',
+        location: {
+          lat: formData.location.lat,
+          lng: formData.location.lng,
+          geohash: '' // You might want to add geohash for location queries
+        },
         userId: currentUser.uid,
         isActive: true,
         totalProducts: 0,
@@ -185,19 +197,58 @@ export default function CreateStoreModal ({ isOpen, onClose }) {
 
               {/* Address */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-2" />
-                  Alamat Toko *
-                </label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  rows="3"
-                  placeholder="Alamat lengkap toko"
-                  required
-                />
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <MapPin className="w-4 h-4 inline mr-2" />
+                    Alamat Toko *
+                  </label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    className="input-field w-full"
+                    rows="2"
+                    placeholder="Alamat lengkap toko"
+                    required
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowMap(!showMap)}
+                    className="flex items-center text-sm text-blue-600 hover:text-blue-800 mt-2"
+                  >
+                    <MapPinIcon className="w-4 h-4 mr-1" />
+                    {showMap ? 'Sembunyikan Peta' : 'Tampilkan Peta untuk Memilih Lokasi'}
+                  </button>
+                  
+                  {showMap && (
+                    <div className="mt-2 border rounded-lg overflow-hidden">
+                      <LocationPicker 
+                        onLocationSelect={(location) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            location: {
+                              lat: location.lat,
+                              lng: location.lng
+                            }
+                          }));
+                        }}
+                        initialLocation={formData.location}
+                      />
+                      <div className="p-3 bg-gray-50 text-sm text-gray-600 border-t">
+                        <p>Klik pada peta untuk memilih lokasi</p>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <span className="font-medium">Latitude:</span> {formData.location.lat.toFixed(6)}
+                          </div>
+                          <div>
+                            <span className="font-medium">Longitude:</span> {formData.location.lng.toFixed(6)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Phone */}
