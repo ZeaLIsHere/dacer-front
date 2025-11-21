@@ -71,9 +71,59 @@ export default function CheckoutModal ({ onClose, userId }) {
       }
       setTransactionData(currentTransactionData)
 
-      // Simulate processing delay for QRIS (more realistic)
+      // QRIS via Midtrans Snap
       if (paymentMethod === 'qris') {
-        await new Promise(resolve => setTimeout(resolve, 1000)) //  delay
+        if (!window.snap) {
+          throw new Error('Layanan pembayaran tidak tersedia')
+        }
+
+        const orderId = `ORDER-${Date.now()}`
+        const grossAmount = getTotalPrice()
+
+        const response = await fetch('http://localhost:5000/api/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            orderId,
+            grossAmount,
+            customer: {
+              firstName: currentStore?.name || 'Customer',
+              email: currentStore?.email || 'customer@example.com',
+              phone: currentStore?.phone || '08123456789'
+            }
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Gagal memulai pembayaran QRIS')
+        }
+
+        const data = await response.json()
+        const snapToken = data.snapToken
+
+        if (!snapToken) {
+          throw new Error('Token pembayaran tidak tersedia')
+        }
+
+        await new Promise((resolve, reject) => {
+          window.snap.pay(snapToken, {
+            onSuccess: () => {
+              resolve()
+            },
+            onPending: () => {
+              resolve()
+            },
+            onError: (err) => {
+              reject(err)
+            },
+            onClose: () => {
+              setLoading(false)
+              resolve()
+            }
+          })
+        })
       }
       // 1. Update stok produk
       const updatePromises = cart.items.map(async (item) => {
@@ -150,6 +200,7 @@ export default function CheckoutModal ({ onClose, userId }) {
 
     } catch (error) {
       console.error('Checkout error:', error)
+      setError(error.message || 'Terjadi kesalahan saat memproses pembayaran')
       // Save transaction data before clearing cart (for error case too)
       if (!transactionData) {
         setTransactionData({
@@ -159,11 +210,8 @@ export default function CheckoutModal ({ onClose, userId }) {
           paymentMethod
         })
       }
-      clearCart()
-      setSuccess(true)
-      setTimeout(() => {
-        onClose()
-      }, 3000)
+      setLoading(false)
+      return
     }
 
     setLoading(false)
