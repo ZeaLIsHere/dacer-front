@@ -25,6 +25,7 @@ export default function Notifications() {
   const [loading, setLoading] = useState(true);
   const [showPromotionModal, setShowPromotionModal] = useState(false);
   const [highStockProductsState, setHighStockProductsState] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(null);
 
   useEffect(() => {
     markAllAsRead();
@@ -33,10 +34,9 @@ export default function Notifications() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Listen to products
     const productsQuery = query(
       collection(db, "products"),
-      where("userId", "==", currentUser.uid),
+      where("userId", "==", currentUser.uid)
     );
 
     const unsubscribeProducts = onSnapshot(productsQuery, (snapshot) => {
@@ -48,10 +48,9 @@ export default function Notifications() {
       setLoading(false);
     });
 
-    // Listen to sales
     const salesQuery = query(
       collection(db, "sales"),
-      where("userId", "==", currentUser.uid),
+      where("userId", "==", currentUser.uid)
     );
 
     const unsubscribeSales = onSnapshot(salesQuery, (snapshot) => {
@@ -71,7 +70,6 @@ export default function Notifications() {
   const notifications = useMemo(() => {
     const notifs = [];
 
-    // Stock alerts
     const outOfStock = products.filter((p) => p.stok === 0);
     const lowStock = products.filter((p) => p.stok > 0 && p.stok <= 5);
 
@@ -97,31 +95,12 @@ export default function Notifications() {
         icon: Package,
         title: "Stok Menipis",
         message: `${product.nama} tinggal ${product.stok} ${product.satuan}`,
-        time: 'Sekarang',
-        priority: 2
-      })
-    })
-
-    return notifs.sort((a, b) => b.priority - a.priority)
-  }, [products, sales, navigate])
-
-  const getNotificationStyle = (type) => {
-    switch (type) {
-      case 'error':
-        return 'border-blue-300 bg-blue-50'
-      case 'warning':
-        return 'border-blue-200 bg-blue-100'
-      case 'success':
-        return 'border-blue-200 bg-blue-50'
-      case 'info':
-        return 'border-blue-200 bg-blue-50'
         time: "Sekarang",
         priority: 2,
-        actionable: false, // Tidak ada action untuk stok menipis
+        actionable: false,
       });
     });
 
-    // Sales insights
     if (sales.length > 0) {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -132,7 +111,6 @@ export default function Notifications() {
       });
 
       if (recentSales.length > 0) {
-        // Best selling product
         const productSales = {};
         recentSales.forEach((sale) => {
           productSales[sale.productId] =
@@ -140,11 +118,11 @@ export default function Notifications() {
         });
 
         const bestSellingProductId = Object.keys(productSales).reduce((a, b) =>
-          productSales[a] > productSales[b] ? a : b,
+          productSales[a] > productSales[b] ? a : b
         );
 
         const bestSellingProduct = products.find(
-          (p) => p.id === bestSellingProductId,
+          (p) => p.id === bestSellingProductId
         );
         const bestSellingCount = productSales[bestSellingProductId];
 
@@ -160,7 +138,6 @@ export default function Notifications() {
           });
         }
 
-        // Daily sales trend
         const today = new Date();
         const todaySales = sales.filter((sale) => {
           const saleDate = sale.timestamp?.toDate();
@@ -193,7 +170,6 @@ export default function Notifications() {
       }
     }
 
-    // Business suggestions
     if (products.length > 0) {
       const highStockProducts = products.filter((p) => p.stok > 50);
       if (highStockProducts.length > 0) {
@@ -218,7 +194,6 @@ export default function Notifications() {
       }
     }
 
-    // Sort by priority (higher first) then by type
     return notifs.sort((a, b) => {
       if (a.priority !== b.priority) return b.priority - a.priority;
       const typeOrder = { error: 3, warning: 2, success: 1, info: 0 };
@@ -266,13 +241,11 @@ export default function Notifications() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-blue-700 mb-2">Notifikasi</h1>
         <p className="text-blue-500">Pantau status bisnis Anda</p>
       </div>
 
-      {/* Notifications Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="card text-center">
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
@@ -299,9 +272,6 @@ export default function Notifications() {
             <TrendingUp className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-blue-600">Kabar Baik</p>
-          <p className="text-lg font-bold text-blue-700">
-            {notifications.filter(n => n.type === 'success').length}
-          <p className="text-sm text-gray-600">Kabar Baik</p>
           <p className="text-lg font-bold text-green-600">
             {notifications.filter((n) => n.type === "success").length}
           </p>
@@ -312,15 +282,12 @@ export default function Notifications() {
             <Bell className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-blue-600">Total</p>
-          <p className="text-lg font-bold text-blue-700">{notifications.length}</p>
-          <p className="text-sm text-gray-600">Total</p>
           <p className="text-lg font-bold text-blue-600">
             {notifications.length}
           </p>
         </div>
       </div>
 
-      {/* Notifications List */}
       {notifications.length === 0 ? (
         <div className="text-center py-12">
           <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -385,7 +352,6 @@ export default function Notifications() {
         </div>
       )}
 
-      {/* Promotion Modal */}
       <PromotionModal
         isOpen={showPromotionModal}
         onClose={() => {
@@ -394,14 +360,13 @@ export default function Notifications() {
         }}
         highStockProducts={highStockProductsState}
         popularProducts={products.filter(
-          (p) => !highStockProductsState.some((hp) => hp.id === p.id),
+          (p) => !highStockProductsState.some((hp) => hp.id === p.id)
         )}
         currentUser={currentUser}
       />
 
-      {/* Quick Actions */}
       {notifications.some(
-        (n) => n.type === "error" || n.type === "warning",
+        (n) => n.type === "error" || n.type === "warning"
       ) && (
         <div className="card">
           <h3 className="font-semibold text-blue-700 mb-3 flex items-center">
