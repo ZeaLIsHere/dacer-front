@@ -25,7 +25,7 @@ export default function Layout ({ children }) {
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.3 }}
-        className="pt-16 px-4 pb-4"
+        className="pt-20 md:pt-24 px-4 pb-6"
       >
         {children}
       </motion.main>

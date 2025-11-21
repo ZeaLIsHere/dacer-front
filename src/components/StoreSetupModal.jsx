@@ -189,8 +189,9 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
               </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(90vh-200px)] overflow-y-auto">
+            {/* Content (scrollable) */}
+            <div className="p-6 space-y-4 max-h-[calc(90vh-200px)] overflow-y-auto">
+              <form onSubmit={handleSubmit} className="space-y-4">
               {/* Store Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -368,15 +369,13 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
                   </>
                 )}
               </motion.button>
-            </form>
-
-            {/* Info */}
-            <div className="px-6 pb-6">
+              {/* Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-700">
                   <strong>💡 Tips:</strong> Setelah toko dibuat, Anda dapat langsung menambah produk dan mulai mencatat penjualan. Data toko dapat diubah kapan saja di menu Status Langganan.
                 </p>
               </div>
+              </form>
             </div>
           </motion.div>
         </motion.div>
