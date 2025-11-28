@@ -4,10 +4,6 @@ import {
   Send, 
   Bot, 
   User, 
-  TrendingUp,
-  Package,
-  DollarSign,
-  BarChart3,
   Trash2,
   ArrowLeft
 } from 'lucide-react'
@@ -23,8 +19,8 @@ export default function ChatbotPage () {
     messages, 
     isTyping, 
     sendMessage, 
-    handleQuickAction,
-    clearChat 
+    clearChat,
+    currentStore
   } = useChatbot()
   const { isFeatureAvailable: _isFeatureAvailable } = useSubscription()
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
@@ -32,6 +28,31 @@ export default function ChatbotPage () {
   const [inputMessage, setInputMessage] = useState('')
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Generate AI name from store name
+  const generateAIName = (storeName) => {
+    if (!storeName) return 'Asisten AI'
+    
+    // Remove common store prefixes and suffixes
+    const cleanName = storeName
+      .replace(/toko|warung|kios|shop|store/gi, '')
+      .trim()
+    
+    // If the name is too short, just add AI
+    if (cleanName.length <= 2) {
+      return `${cleanName} AI`
+    }
+    
+    // Capitalize each word
+    const formattedName = cleanName
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+    
+    return `${formattedName} AI`
+  }
+
+  const aiName = generateAIName(currentStore?.storeName)
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -107,7 +128,7 @@ export default function ChatbotPage () {
               />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Agam AI</h1>
+              <h1 className="text-xl font-bold">{aiName}</h1>
               <p className="text-sm opacity-90">Asisten Bisnis Pintar Anda</p>
             </div>
           </div>
@@ -173,40 +194,7 @@ export default function ChatbotPage () {
                   </div>
                 </div>
 
-                {msg.type === 'bot' && msg.suggestions && msg.suggestions.length > 0 && (
-                  <div className="mt-3 mr-10">
-                    <div className="flex flex-wrap gap-2">
-                      {msg.suggestions.map((suggestion, index) => (
-                        <motion.button
-                          key={index}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.1 }}
-                          onClick={() => handleQuickAction(suggestion)}
-                          className="px-3 py-2 border rounded-full text-xs hover:opacity-80 transition-colors flex items-center space-x-1 shadow-sm"
-                          style={{
-                            backgroundColor: '#FFFFFF',
-                            borderColor: '#E5E7EB',
-                            color: '#1F2937'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.target.style.borderColor = '#3B72FF'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.borderColor = '#E5E7EB'
-                          }}
-                        >
-                          {suggestion.includes('penjualan') && <TrendingUp size={12} />}
-                          {suggestion.includes('stok') && <Package size={12} />}
-                          {suggestion.includes('profit') && <DollarSign size={12} />}
-                          {suggestion.includes('analisis') && <BarChart3 size={12} />}
-                          <span>{suggestion}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
             </motion.div>
           ))}
 
@@ -241,46 +229,6 @@ export default function ChatbotPage () {
 
         {/* Input Area */}
         <div className="border-t p-4 shadow-lg bg-white border-[#E5E7EB]">
-          {/* Quick Actions */}
-          <div className="mb-4 flex flex-wrap gap-2">
-            {['Jualan', 'Stok', 'Tren', 'Saran'].map((action, index) => (
-              <motion.button
-                key={action}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => {
-                  const actionMap = {
-                    'Jualan': 'Jualan hari ini gimana?',
-                    'Stok': 'Barang apa yang habis?',
-                    'Tren': 'Gimana tren jualan?',
-                    'Saran': 'Kasih saran dong'
-                  }
-                  handleQuickAction(actionMap[action])
-                }}
-                className="px-4 py-2 rounded-full text-sm hover:opacity-80 transition-colors flex items-center space-x-2"
-                style={{
-                  backgroundColor: '#E5E7EB',
-                  color: '#1F2937'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#3B72FF'
-                  e.target.style.color = 'white'
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#E5E7EB'
-                  e.target.style.color = '#1F2937'
-                }}
-              >
-                {action === 'Jualan' && <TrendingUp size={14} />}
-                {action === 'Stok' && <Package size={14} />}
-                {action === 'Tren' && <BarChart3 size={14} />}
-                {action === 'Saran' && <DollarSign size={14} />}
-                <span>{action}</span>
-              </motion.button>
-            ))}
-          </div>
-
           {/* Input Field */}
           <div className="flex items-center space-x-3">
             <input

@@ -417,17 +417,8 @@ export default function CheckoutModal ({ onClose, userId }) {
                 {/* QRIS Code Display */}
                 {paymentMethod === 'qris' && (
                   <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg text-center">
-                    <p className="text-sm text-gray-600 mb-3">Berikan QR Code kepada pembeli untuk melakukan pembayaran</p>
+                    <p className="text-sm text-gray-600 mb-3">Pilih QR Code dan tunjukkan kepada pembeli untuk melakukan pembayaran</p>
                     <div className="flex justify-center">
-                      <img 
-                        src="/qris.jpg" 
-                        alt="QRIS Payment Code" 
-                        className="w-64 h-auto rounded-lg shadow-md"
-                        onError={(e) => {
-                          e.target.style.display = 'none'
-                          e.target.nextSibling.style.display = 'block'
-                        }}
-                      />
                       <div className="hidden p-8 bg-gray-100 rounded-lg">
                         <p className="text-gray-500">QR Code tidak tersedia</p>
                       </div>
@@ -477,5 +468,3 @@ export default function CheckoutModal ({ onClose, userId }) {
     </AnimatePresence>
   )
 }
-
-//ok
