@@ -1,6 +1,16 @@
+/* In your main CSS file */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add custom styles if needed */
+.promotion-eligible {
+  @apply bg-green-50;
+}
+
+.promotion-not-eligible {
+  @apply bg-white;
+}
 
 /* Cool & Professional Color Palette (Blue-Based Theme) */
 :root {
