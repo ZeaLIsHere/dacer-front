@@ -29,6 +29,7 @@ const TodayRevenue = lazy(() => import('./pages/TodayRevenue'))
 const CollectiveShopping = lazy(() => import('./pages/CollectiveShopping'))
 const ChatbotPage = lazy(() => import('./pages/ChatbotPage'))
 const LocationPage = lazy(() => import('./pages/LocationPage'))
+const PromotionManagement = lazy(() => import('./pages/PromotionManagement'))
 
 // Inner App component that uses toast context
 function AppContent () {
@@ -100,6 +101,13 @@ function AppContent () {
             <PrivateRoute>
               <Layout>
                 <CollectiveShopping />
+              </Layout>
+            </PrivateRoute>
+          } />
+          <Route path="/promotions" element={
+            <PrivateRoute>
+              <Layout>
+                <PromotionManagement />
               </Layout>
             </PrivateRoute>
           } />
