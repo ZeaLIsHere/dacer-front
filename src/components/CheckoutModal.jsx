@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, CheckCircle, AlertCircle } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
@@ -484,5 +484,4 @@ export default function CheckoutModal ({ onClose, userId }) {
   )
 }
 
-// ok
-}
+

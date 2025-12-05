@@ -97,23 +97,23 @@ class DebtService {
   }
 
   // Add new customer
-  async addCustomer(customerData, userId) {
+  async addCustomer (customerData, userId) {
     try {
       if (!userId) {
-        throw new Error('User not authenticated');
+        throw new Error('User not authenticated')
       }
 
       const customerWithUserId = {
         ...customerData,
-        userId: userId,
+        userId,
         createdAt: new Date().toISOString()
-      };
+      }
 
-      const docRef = await addDoc(collection(db, 'customers'), customerWithUserId);
-      return { id: docRef.id, ...customerWithUserId };
+      const docRef = await addDoc(collection(db, 'customers'), customerWithUserId)
+      return { id: docRef.id, ...customerWithUserId }
     } catch (error) {
-      console.error('Error adding customer:', error);
-      throw new Error('Failed to add customer');
+      console.error('Error adding customer:', error)
+      throw new Error('Failed to add customer')
     }
   }
 

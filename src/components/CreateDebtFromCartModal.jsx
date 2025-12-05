@@ -7,7 +7,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function CreateDebtFromCartModal({ isOpen, onClose, cartData, onSuccess }) {
+export default function CreateDebtFromCartModal ({ isOpen, onClose, cartData, onSuccess }) {
   const { currentUser } = useAuth()
   const [customers, setCustomers] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState(null)

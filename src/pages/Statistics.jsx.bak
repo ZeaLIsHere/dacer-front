@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useAuth } from "../contexts/AuthContext"
 import { useStore } from "../contexts/StoreContext"
@@ -109,6 +109,17 @@ const SimplePieChart = ({ data, size = 120 }) => {
     </div>
   )
 }
+
+export default function Statistics () {
+  const { currentUser } = useAuth()
+  const { currentStore, storeStats } = useStore()
+  const [sales, setSales] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filterPeriod, setFilterPeriod] = useState("today") // today, week, month, year, custom
+  );
+};
+
 export default function Statistics() {
   const { currentUser } = useAuth();
   const { currentStore, storeStats } = useStore();
@@ -325,6 +336,10 @@ export default function Statistics() {
     const count = getTotalTransactions()
     return count > 0 ? total / count : 0
   }
+    return filteredSales.length;
+  };
+
+  
 
   const getTopProducts = () => {
     try {
@@ -1298,6 +1313,3 @@ export default function Statistics() {
     )
   }
 }
-
-
-

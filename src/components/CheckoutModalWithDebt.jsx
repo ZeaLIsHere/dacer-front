@@ -75,20 +75,20 @@ export default function CheckoutModalWithDebt ({ onClose, userId }) {
       // Validasi stok terlebih dahulu
       const stockChecks = await Promise.all(
         cart.items.map(async (item) => {
-          const productDoc = await getDoc(doc(db, 'products', item.id));
+          const productDoc = await getDoc(doc(db, 'products', item.id))
           if (!productDoc.exists()) {
-            throw new Error(`Produk ${item.nama} tidak ditemukan`);
+            throw new Error(`Produk ${item.nama} tidak ditemukan`)
           }
-          const currentStock = productDoc.data().stok || 0;
+          const currentStock = productDoc.data().stok || 0
           if (currentStock < item.quantity) {
-            throw new Error(`Stok ${item.nama} tidak mencukupi. Tersedia: ${currentStock}`);
+            throw new Error(`Stok ${item.nama} tidak mencukupi. Tersedia: ${currentStock}`)
           }
-          return { ...item, currentStock };
+          return { ...item, currentStock }
         })
-      );
+      )
 
       // Mulai batch write
-      const batch = writeBatch(db);
+      const batch = writeBatch(db)
       
       // 1. Buat data transaksi
       const transactionData = {
@@ -108,25 +108,25 @@ export default function CheckoutModalWithDebt ({ onClose, userId }) {
         timestamp: serverTimestamp(),
         createdAt: new Date(),
         status: isDebtTransaction ? 'pending' : 'completed'
-      };
+      }
       
       // 2. Tambahkan transaksi ke batch
-      const transactionRef = doc(collection(db, 'transactions'));
-      batch.set(transactionRef, transactionData);
+      const transactionRef = doc(collection(db, 'transactions'))
+      batch.set(transactionRef, transactionData)
       
       // 3. Update stok produk
       stockChecks.forEach((item) => {
-        const productRef = doc(db, 'products', item.id);
-        const newStock = item.currentStock - item.quantity;
-        batch.update(productRef, { stok: newStock });
+        const productRef = doc(db, 'products', item.id)
+        const newStock = item.currentStock - item.quantity
+        batch.update(productRef, { stok: newStock })
         
         // Notifikasi stok habis atau hampir habis
         if (newStock === 0) {
-          notifyStockOut(item.nama);
+          notifyStockOut(item.nama)
         } else if (newStock <= 5) {
-          notifyLowStock(item.nama, newStock);
+          notifyLowStock(item.nama, newStock)
         }
-      });
+      })
       
       // 4. Jika transaksi hutang, buat catatan hutang
       if (isDebtTransaction) {
@@ -150,17 +150,17 @@ export default function CheckoutModalWithDebt ({ onClose, userId }) {
           })),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        };
-        const debtRef = doc(collection(db, 'debts'));
-        batch.set(debtRef, debtData);
+        }
+        const debtRef = doc(collection(db, 'debts'))
+        batch.set(debtRef, debtData)
       }
       
       // Eksekusi batch write
-      await batch.commit();
+      await batch.commit()
       
       // Update transaction status to completed if not debt
       if (!isDebtTransaction) {
-        await updateDoc(transactionRef, { status: 'completed' });
+        await updateDoc(transactionRef, { status: 'completed' })
       }
 
       // Kirim notifikasi sukses
