@@ -1,68 +1,68 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { X, AlertCircle } from "lucide-react"; // Menambahkan AlertCircle
+import React, { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { X, AlertCircle } from "lucide-react" // Menambahkan AlertCircle
 import {
   addDoc,
   collection,
   serverTimestamp,
   updateDoc,
-  doc,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
-import { useToast } from "../contexts/ToastContext";
+  doc
+} from "firebase/firestore"
+import { db } from "../config/firebase"
+import { useToast } from "../contexts/ToastContext"
 
-export default function PromotionModal({
+export default function PromotionModal ({
   isOpen,
   onClose,
   highStockProducts = [],
   popularProducts = [],
   currentUser,
-  initialPromotion = null,
+  initialPromotion = null
 }) {
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [type, setType] = useState("discount"); // 'discount' or 'bundle'
-  const [discountPercent, setDiscountPercent] = useState(20);
-  const [bundleProductId, setBundleProductId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { showSuccess, showError } = useToast();
+  const [selectedProductId, setSelectedProductId] = useState("")
+  const [type, setType] = useState("discount") // 'discount' or 'bundle'
+  const [discountPercent, setDiscountPercent] = useState(20)
+  const [bundleProductId, setBundleProductId] = useState("")
+  const [loading, setLoading] = useState(false)
+  const { showSuccess, showError } = useToast()
 
   // Filter produk populer untuk memastikan produk utama tidak menjadi produk pendamping
   const filteredPopularProducts = popularProducts.filter(
-    (p) => p.id !== selectedProductId,
-  );
+    (p) => p.id !== selectedProductId
+  )
 
   // LOGIKA TAMBAHAN: Tentukan daftar produk yang akan ditampilkan.
   // Jika produk yang difilter kosong, gunakan semua produk populer
   // dan tampilkan peringatan.
   const productsToDisplay = filteredPopularProducts.length > 0
     ? filteredPopularProducts
-    : popularProducts;
+    : popularProducts
 
   useEffect(() => {
     if (isOpen && highStockProducts.length > 0) {
-      setSelectedProductId(initialPromotion?.productId || highStockProducts[0].id);
+      setSelectedProductId(initialPromotion?.productId || highStockProducts[0].id)
     }
     // Jika mengedit promosi yang sudah ada, isi bidang
     if (initialPromotion) {
       // Menggunakan initialPromotion.productId jika ada, jika tidak gunakan produk dengan stok tinggi pertama
-      setSelectedProductId(initialPromotion.productId || highStockProducts[0]?.id || "");
-      setType(initialPromotion.type || "discount");
-      setDiscountPercent(initialPromotion.discountPercent || 20);
-      setBundleProductId(initialPromotion.bundleWith || "");
+      setSelectedProductId(initialPromotion.productId || highStockProducts[0]?.id || "")
+      setType(initialPromotion.type || "discount")
+      setDiscountPercent(initialPromotion.discountPercent || 20)
+      setBundleProductId(initialPromotion.bundleWith || "")
     } else {
       // Reset state saat modal dibuka tanpa data awal
-      setType("discount");
-      setDiscountPercent(20);
-      setBundleProductId("");
+      setType("discount")
+      setDiscountPercent(20)
+      setBundleProductId("")
     }
-  }, [isOpen, highStockProducts, initialPromotion]);
+  }, [isOpen, highStockProducts, initialPromotion])
 
   // Setel ulang bundleProductId jika selectedProductId berubah
   useEffect(() => {
     if (selectedProductId) {
       // Periksa apakah bundleProductId saat ini masih valid (bukan produk utama)
       if (bundleProductId === selectedProductId) {
-        setBundleProductId(""); // Reset jika sama
+        setBundleProductId("") // Reset jika sama
       }
       // Jika produk yang difilter kosong, coba set bundleProductId ke produk pertama di daftar penuh.
       // Jika daftar yang difilter (filteredPopularProducts) kosong, bundleProductId harus di-reset,
@@ -70,34 +70,34 @@ export default function PromotionModal({
       if (type === "bundle" && filteredPopularProducts.length === 0) {
           // Tidak perlu melakukan apa-apa di sini, tapi kita harus pastikan
           // tidak memilih produk yang sama dengan produk utama
-          setBundleProductId("");
+          setBundleProductId("")
       }
     }
-  }, [selectedProductId, type]);
+  }, [selectedProductId, type])
 
   const handleSubmit = async () => {
-    setLoading(true);
+    setLoading(true)
 
     if (!selectedProductId) {
-      showError("Mohon pilih produk utama untuk promosi.");
-      setLoading(false);
-      return;
+      showError("Mohon pilih produk utama untuk promosi.")
+      setLoading(false)
+      return
     }
 
     if (type === "bundle" && !bundleProductId) {
-      showError("Mohon pilih produk pendamping untuk promosi bundle.");
-      setLoading(false);
-      return;
+      showError("Mohon pilih produk pendamping untuk promosi bundle.")
+      setLoading(false)
+      return
     }
 
     const mainProduct = highStockProducts.find(
-      (p) => p.id === selectedProductId,
-    );
+      (p) => p.id === selectedProductId
+    )
 
     if (!mainProduct) {
-      showError("Produk utama tidak ditemukan.");
-      setLoading(false);
-      return;
+      showError("Produk utama tidak ditemukan.")
+      setLoading(false)
+      return
     }
 
     const promotionData = {
@@ -106,50 +106,50 @@ export default function PromotionModal({
       discountPercent: type === "discount" ? discountPercent : null,
       bundleWith: type === "bundle" ? bundleProductId : null,
       timestamp: serverTimestamp(),
-      userId: currentUser.uid,
-    };
+      userId: currentUser.uid
+    }
 
     try {
       // Simpan / update dokumen promosi
       if (initialPromotion) {
-        await updateDoc(doc(db, "promotions", initialPromotion.id), promotionData);
-        showSuccess("Promosi berhasil diperbarui!");
+        await updateDoc(doc(db, "promotions", initialPromotion.id), promotionData)
+        showSuccess("Promosi berhasil diperbarui!")
       } else {
-        await addDoc(collection(db, "promotions"), promotionData);
-        showSuccess("Promosi baru berhasil dibuat!");
+        await addDoc(collection(db, "promotions"), promotionData)
+        showSuccess("Promosi baru berhasil dibuat!")
       }
 
       // Terapkan efek promosi ke koleksi products
       if (type === "discount") {
-        const originalPrice = mainProduct.originalPrice || mainProduct.harga || 0;
+        const originalPrice = mainProduct.originalPrice || mainProduct.harga || 0
         const discountedPrice = Math.round(
-          originalPrice * (1 - discountPercent / 100),
-        );
+          originalPrice * (1 - discountPercent / 100)
+        )
 
         await updateDoc(doc(db, "products", selectedProductId), {
           harga: discountedPrice,
-          originalPrice,
-        });
+          originalPrice
+        })
       } else if (type === "bundle" && bundleProductId) {
         const bundleProduct = productsToDisplay.find(
-          (p) => p.id === bundleProductId,
-        );
+          (p) => p.id === bundleProductId
+        )
 
         if (!bundleProduct) {
-          showError("Produk pendamping tidak ditemukan.");
-          setLoading(false);
-          return;
+          showError("Produk pendamping tidak ditemukan.")
+          setLoading(false)
+          return
         }
 
-        const priceA = mainProduct.harga || 0;
-        const priceB = bundleProduct.harga || 0;
-        const basePrice = priceA + priceB;
-        const bundlePrice = Math.round(basePrice * 0.9); // 10% lebih murah dari total
+        const priceA = mainProduct.harga || 0
+        const priceB = bundleProduct.harga || 0
+        const basePrice = priceA + priceB
+        const bundlePrice = Math.round(basePrice * 0.9) // 10% lebih murah dari total
 
         const bundleStock =
-          Math.min(mainProduct.stok || 0, bundleProduct.stok || 0) || 1;
+          Math.min(mainProduct.stok || 0, bundleProduct.stok || 0) || 1
 
-        const bundleName = `${mainProduct.nama} + ${bundleProduct.nama} (Paket)`;
+        const bundleName = `${mainProduct.nama} + ${bundleProduct.nama} (Paket)`
 
         await addDoc(collection(db, "products"), {
           nama: bundleName,
@@ -164,20 +164,20 @@ export default function PromotionModal({
           bundleMainProductId: selectedProductId,
           bundleWithProductId: bundleProductId,
           bundleBasePrice: basePrice,
-          bundleDiscountPercent: 10,
-        });
+          bundleDiscountPercent: 10
+        })
       }
 
-      onClose();
+      onClose()
     } catch (e) {
-      console.error("Error creating/updating promotion: ", e);
-      showError("Gagal menyimpan promosi. Silakan coba lagi.");
+      console.error("Error creating/updating promotion: ", e)
+      showError("Gagal menyimpan promosi. Silakan coba lagi.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <motion.div
@@ -333,7 +333,7 @@ export default function PromotionModal({
                     <p className="font-bold text-gray-800">
                       {
                         highStockProducts.find(
-                          (p) => p.id === selectedProductId,
+                          (p) => p.id === selectedProductId
                         )?.nama
                       }
                     </p>
@@ -349,7 +349,7 @@ export default function PromotionModal({
                     <p className="font-bold">
                       {bundleProductId
                         ? productsToDisplay.find(
-                            (p) => p.id === bundleProductId,
+                            (p) => p.id === bundleProductId
                           )?.nama || 'Memuat...'
                         : "Pilih Produk"}
                     </p>
@@ -412,5 +412,5 @@ export default function PromotionModal({
         </div>
       </motion.div>
     </motion.div>
-  );
+  )
 }

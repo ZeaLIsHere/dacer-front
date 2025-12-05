@@ -1,22 +1,22 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import CreateStoreModal from "../components/CreateStoreModal";
-import SubscriptionModal from "../components/SubscriptionModal";
-import SubscriptionStatus from "../components/SubscriptionStatus";
+import React, { useState } from "react"
+import { motion } from "framer-motion"
+import CreateStoreModal from "../components/CreateStoreModal"
+import SubscriptionModal from "../components/SubscriptionModal"
+import SubscriptionStatus from "../components/SubscriptionStatus"
 import {
   Settings as SettingsIcon,
   Smartphone,
   Plus,
   ChevronRight,
   Store,
-  Crown,
-} from "lucide-react";
+  Crown
+} from "lucide-react"
 
-export default function Settings() {
+export default function Settings () {
   // Language selection removed — settings page is now focused on subscription status
-  const [showCreateStoreModal, setShowCreateStoreModal] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const getText = (id) => id;
+  const [showCreateStoreModal, setShowCreateStoreModal] = useState(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const getText = (id) => id
 
   return (
     <div className="space-y-6">
@@ -28,7 +28,7 @@ export default function Settings() {
         <p className="text-gray-600">
           {getText(
             "Kelola status dan opsi berlangganan Anda",
-            "Manage your subscription status and options",
+            "Manage your subscription status and options"
           )}
         </p>
       </div>
@@ -51,7 +51,7 @@ export default function Settings() {
             <p className="text-sm text-gray-600">
               {getText(
                 "Akses penuh fitur AI untuk bisnis Anda",
-                "Full access to AI features for your business",
+                "Full access to AI features for your business"
               )}
             </p>
           </div>
@@ -78,7 +78,7 @@ export default function Settings() {
             <p className="text-sm text-gray-600">
               {getText(
                 "Kelola beberapa toko dalam satu akun",
-                "Manage multiple stores in one account",
+                "Manage multiple stores in one account"
               )}
             </p>
           </div>
@@ -102,7 +102,7 @@ export default function Settings() {
               <p className="text-sm opacity-90">
                 {getText(
                   "Tambah toko untuk bisnis yang berbeda",
-                  "Add store for different business",
+                  "Add store for different business"
                 )}
               </p>
             </div>
@@ -144,7 +144,7 @@ export default function Settings() {
           <p className="text-xs text-gray-500">
             {getText(
               "Aplikasi kasir pintar untuk bisnis Anda",
-              "Smart cashier app for your business",
+              "Smart cashier app for your business"
             )}
           </p>
         </div>
@@ -168,14 +168,14 @@ export default function Settings() {
                 •{" "}
                 {getText(
                   "Pengaturan akan disimpan secara lokal di perangkat Anda",
-                  "Settings will be saved locally on your device",
+                  "Settings will be saved locally on your device"
                 )}
               </li>
               <li>
                 •{" "}
                 {getText(
                   "Setiap toko memiliki data terpisah dan dapat dikelola secara independen",
-                  "Each store has separate data and can be managed independently",
+                  "Each store has separate data and can be managed independently"
                 )}
               </li>
             </ul>
@@ -195,5 +195,5 @@ export default function Settings() {
         onClose={() => setShowSubscriptionModal(false)}
       />
     </div>
-  );
+  )
 }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 import {
   X,
   AlertTriangle,
@@ -8,11 +8,11 @@ import {
   Plus,
   TrendingUp,
   CheckCircle,
-  Info,
-} from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNotification } from "../contexts/NotificationContext";
-import { db } from "../config/firebase";
+  Info
+} from "lucide-react"
+import { useAuth } from "../contexts/AuthContext"
+import { useNotification } from "../contexts/NotificationContext"
+import { db } from "../config/firebase"
 import {
   collection,
   query,
@@ -20,71 +20,71 @@ import {
   onSnapshot,
   doc,
   updateDoc,
-  increment,
-} from "firebase/firestore";
+  increment
+} from "firebase/firestore"
 
-export default function NotificationSystem() {
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
+export default function NotificationSystem () {
+  const { currentUser } = useAuth()
+  const navigate = useNavigate()
   const {
     notifications,
     addNotification,
-    removeNotification: removeNotif,
-  } = useNotification();
-  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
-  const [showQuickStock, setShowQuickStock] = useState(null);
+    removeNotification: removeNotif
+  } = useNotification()
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false)
+  const [showQuickStock, setShowQuickStock] = useState(null)
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) return
 
     const productsQuery = query(
       collection(db, "products"),
-      where("userId", "==", currentUser.uid),
-    );
+      where("userId", "==", currentUser.uid)
+    )
 
     const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
       const products = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
-      }));
+        ...doc.data()
+      }))
 
       // Generate notifications based on product status
-      const newNotifications = [];
+      const newNotifications = []
 
       // Check for critical issues that need attention
-      const outOfStock = products.filter((product) => product.stok === 0);
+      const outOfStock = products.filter((product) => product.stok === 0)
       const lowStock = products.filter(
-        (product) => product.stok > 0 && product.stok < 5,
-      );
+        (product) => product.stok > 0 && product.stok < 5
+      )
 
       // Show simple pop-up notification to redirect to notifications page
       if (
         (outOfStock.length > 0 || lowStock.length > 0) &&
         !hasUnreadNotifications
       ) {
-        setHasUnreadNotifications(true);
+        setHasUnreadNotifications(true)
 
-        const totalIssues = outOfStock.length + lowStock.length;
+        const totalIssues = outOfStock.length + lowStock.length
         addNotification({
           type: "redirect-notification",
           title: "Ada Masalah Stok",
           message: `${totalIssues} produk perlu perhatian`,
           action: () => {
-            navigate("/notifications");
+            navigate("/notifications")
           },
           actionText: "Lihat Detail",
           color: "yellow",
-          persistent: false,
-        });
+          persistent: false
+        })
       }
 
       // Check for products with good sales potential (high price, good stock)
       const goodProducts = products.filter(
-        (product) => product.stok >= 10 && product.harga >= 5000,
-      );
+        (product) => product.stok >= 10 && product.harga >= 5000
+      )
       if (goodProducts.length > 0) {
         const randomProduct =
-          goodProducts[Math.floor(Math.random() * goodProducts.length)];
+          goodProducts[Math.floor(Math.random() * goodProducts.length)]
         newNotifications.push({
           id: `promote-${randomProduct.id}`,
           type: "promotion",
@@ -94,42 +94,42 @@ export default function NotificationSystem() {
           action: "promote",
           actionText: "Promosikan",
           icon: TrendingUp,
-          color: "green",
-        });
+          color: "green"
+        })
       }
-    });
+    })
 
-    return unsubscribe;
-  }, [currentUser, addNotification, navigate, hasUnreadNotifications]);
+    return unsubscribe
+  }, [currentUser, addNotification, navigate, hasUnreadNotifications])
 
   const handleNotificationAction = async (notification) => {
     if (notification.action && typeof notification.action === "function") {
-      notification.action();
+      notification.action()
     }
     // Remove notification after action (except for persistent ones)
     if (!notification.persistent) {
-      removeNotif(notification.id);
+      removeNotif(notification.id)
     }
-  };
+  }
 
   const handleQuickStockAdd = async (productId, quantity) => {
     try {
-      const productRef = doc(db, "products", productId);
+      const productRef = doc(db, "products", productId)
       await updateDoc(productRef, {
-        stok: increment(quantity),
-      });
+        stok: increment(quantity)
+      })
 
-      setShowQuickStock(null);
+      setShowQuickStock(null)
     } catch (error) {
-      console.error("Error updating stock:", error);
+      console.error("Error updating stock:", error)
     }
-  };
+  }
 
   const removeNotification = (id) => {
-    removeNotif(id);
-  };
+    removeNotif(id)
+  }
 
-  if (!notifications || notifications.length === 0) return null;
+  if (!notifications || notifications.length === 0) return null
 
   return (
     <>
@@ -143,17 +143,17 @@ export default function NotificationSystem() {
               "transaction-success": CheckCircle,
               "product-added": Plus,
               "stock-updated": Package,
-              promotion: TrendingUp,
-            };
+              promotion: TrendingUp
+            }
 
-            const IconComponent = iconMap[notification.type] || Info;
+            const IconComponent = iconMap[notification.type] || Info
 
             const colorClasses = {
               red: "bg-red-50 border-red-200 text-red-800",
               yellow: "bg-yellow-50 border-yellow-200 text-yellow-800",
               green: "bg-green-50 border-green-200 text-green-800",
-              blue: "bg-blue-50 border-blue-200 text-blue-800",
-            };
+              blue: "bg-blue-50 border-blue-200 text-blue-800"
+            }
 
             return (
               <motion.div
@@ -179,8 +179,8 @@ export default function NotificationSystem() {
                       </button>
                       <button
                         onClick={(e) => {
-                          e.stopPropagation();
-                          removeNotification(notification.id);
+                          e.stopPropagation()
+                          removeNotification(notification.id)
                         }}
                         className="text-xs opacity-60 hover:opacity-100"
                       >
@@ -190,7 +190,7 @@ export default function NotificationSystem() {
                   </div>
                 </div>
               </motion.div>
-            );
+            )
           })}
         </AnimatePresence>
       </div>
@@ -204,19 +204,19 @@ export default function NotificationSystem() {
         />
       )}
     </>
-  );
+  )
 }
 
 // Quick Stock Addition Modal
-function QuickStockModal({ product, onClose, onAddStock }) {
-  const [quantity, setQuantity] = useState(10);
+function QuickStockModal ({ product, onClose, onAddStock }) {
+  const [quantity, setQuantity] = useState(10)
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (quantity > 0) {
-      onAddStock(product.id, quantity);
+      onAddStock(product.id, quantity)
     }
-  };
+  }
 
   return (
     <AnimatePresence>
@@ -306,5 +306,5 @@ function QuickStockModal({ product, onClose, onAddStock }) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  );
+  )
 }

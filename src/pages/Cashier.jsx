@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
+import { useNavigate } from 'react-router-dom'
 import { db } from '../config/firebase'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { ShoppingCart, Search, Filter } from 'lucide-react'
 import ProductGrid from '../components/ProductGrid'
 import CartModal from '../components/CartModal'
 import CheckoutModal from '../components/CheckoutModal'
+import CheckoutModalWithDebt from '../components/CheckoutModalWithDebt'
 
 export default function Cashier () {
   const { currentUser } = useAuth()
-  const { cart, getTotalItems } = useCart()
+  const { cart, getTotalItems, getTotalPrice, clearCart } = useCart()
+  const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,6 +22,7 @@ export default function Cashier () {
   const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
+  const [showDebtCheckout, setShowDebtCheckout] = useState(false)
   const [categories, setCategories] = useState(['Semua'])
 
   useEffect(() => {
@@ -72,6 +76,26 @@ export default function Cashier () {
     if (cart.items.length === 0) return
     setShowCart(false)
     setShowCheckout(true)
+  }
+
+  const handleDebtCheckout = () => {
+    if (cart.items.length === 0) return
+    
+    // Navigate to debts page with cart data
+    navigate('/debts', {
+      state: {
+        fromCashier: true,
+        cartData: {
+          items: cart.items,
+          totalAmount: getTotalPrice(),
+          totalItems: getTotalItems()
+        }
+      }
+    })
+    
+    // Clear cart after navigation
+    clearCart()
+    setShowCart(false)
   }
 
   if (loading) {
@@ -172,6 +196,7 @@ export default function Cashier () {
           <CartModal
             onClose={() => setShowCart(false)}
             onCheckout={handleCheckout}
+            onDebtCheckout={handleDebtCheckout}
           />
         )}
       </AnimatePresence>
@@ -181,6 +206,16 @@ export default function Cashier () {
         {showCheckout && (
           <CheckoutModal
             onClose={() => setShowCheckout(false)}
+            userId={currentUser?.uid}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Debt Checkout Modal */}
+      <AnimatePresence>
+        {showDebtCheckout && (
+          <CheckoutModalWithDebt
+            onClose={() => setShowDebtCheckout(false)}
             userId={currentUser?.uid}
           />
         )}

@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import LocationPicker from '../components/LocationPicker';
+import { useState } from 'react'
+import LocationPicker from '../components/LocationPicker'
 
 const LocationPage = () => {
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null)
 
   const handleLocationSelect = (location) => {
-    setSelectedLocation(location);
-    console.log('Selected location:', location);
-  };
+    setSelectedLocation(location)
+    console.log('Selected location:', location)
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -25,7 +25,7 @@ const LocationPage = () => {
             <button 
               onClick={() => {
                 // Here you can add code to save the location or navigate back
-                alert(`Lokasi disimpan: ${selectedLocation.lat}, ${selectedLocation.lng}`);
+                alert(`Lokasi disimpan: ${selectedLocation.lat}, ${selectedLocation.lng}`)
               }}
               className="mt-3 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
             >
@@ -35,7 +35,7 @@ const LocationPage = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default LocationPage;
+export default LocationPage

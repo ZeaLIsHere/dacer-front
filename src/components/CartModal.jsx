@@ -1,9 +1,9 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useCart } from '../contexts/CartContext'
-import { X, Plus, Minus, CreditCard, ShoppingCart } from 'lucide-react'
+import { X, Plus, Minus, CreditCard, ShoppingCart, Calendar } from 'lucide-react'
 
-export default function CartModal ({ onClose, onCheckout }) {
+export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
   const { cart, updateQuantity, removeItem, getTotalPrice, getTotalItems } = useCart()
 
   const handleQuantityChange = (productId, newQuantity) => {
@@ -127,16 +127,27 @@ export default function CartModal ({ onClose, onCheckout }) {
               </span>
             </div>
 
-            {/* Checkout Button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onCheckout}
-              className="w-full bg-primary text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"
-            >
-              <CreditCard size={20} />
-              <span>Bayar Sekarang</span>
-            </motion.button>
+            {/* Checkout Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onCheckout}
+                className="bg-green-600 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"
+              >
+                <CreditCard size={18} />
+                <span>Bayar Tunai</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onDebtCheckout}
+                className="bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"
+              >
+                <Calendar size={18} />
+                <span>Buat Hutang</span>
+              </motion.button>
+            </div>
           </div>
         )}
       </motion.div>

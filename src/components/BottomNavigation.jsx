@@ -1,13 +1,14 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Home, ShoppingCart, Package, BarChart3, Users, MessageCircle } from 'lucide-react'
+import { Home, ShoppingCart, Package, BarChart3, Users, MessageCircle, CreditCard } from 'lucide-react'
 
 const navItems = [
   { path: '/', icon: Home, label: 'Beranda' },
   { path: '/cashier', icon: ShoppingCart, label: 'Kasir' },
   { path: '/collective-shopping', icon: Users, label: 'Kolektif' },
   { path: '/stock', icon: Package, label: 'Stok' },
+  { path: '/debts', icon: CreditCard, label: 'Hutang' },
   { path: '/statistics', icon: BarChart3, label: 'Statistik' },
   { path: '/chatbot', icon: MessageCircle, label: 'AI Chat' }
 ]

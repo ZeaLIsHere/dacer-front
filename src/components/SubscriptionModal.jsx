@@ -1,47 +1,47 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Crown, Star, CreditCard, Gift } from "lucide-react";
-import { useSubscription } from "../contexts/SubscriptionContext";
-import { useToast } from "../contexts/ToastContext";
+import React, { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { X, Check, Crown, Star, CreditCard, Gift } from "lucide-react"
+import { useSubscription } from "../contexts/SubscriptionContext"
+import { useToast } from "../contexts/ToastContext"
 
 const SubscriptionModal = ({ isOpen, onClose }) => {
-  const { subscribe, getSubscriptionInfo, plans } = useSubscription();
-  const { showSuccess, showError } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState("yearly");
-  const [showPayment, setShowPayment] = useState(false);
+  const { subscribe, getSubscriptionInfo, plans } = useSubscription()
+  const { showSuccess, showError } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState("yearly")
+  const [showPayment, setShowPayment] = useState(false)
 
-  const subscriptionInfo = getSubscriptionInfo();
+  const subscriptionInfo = getSubscriptionInfo()
 
   const handleSubscribe = async (planId) => {
-    setLoading(true);
+    setLoading(true)
     try {
-      await subscribe(planId, "credit_card");
-      showSuccess("Berlangganan berhasil! Selamat menikmati fitur premium.");
-      onClose();
+      await subscribe(planId, "credit_card")
+      showSuccess("Berlangganan berhasil! Selamat menikmati fitur premium.")
+      onClose()
     } catch (error) {
-      showError("Gagal berlangganan. Silakan coba lagi.");
-      console.error("Subscription error:", error);
+      showError("Gagal berlangganan. Silakan coba lagi.")
+      console.error("Subscription error:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handlePayment = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      await handleSubscribe(selectedPlan);
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await handleSubscribe(selectedPlan)
     } catch (error) {
-      showError("Pembayaran gagal. Silakan coba lagi.");
+      showError("Pembayaran gagal. Silakan coba lagi.")
     } finally {
-      setLoading(false);
-      setShowPayment(false);
+      setLoading(false)
+      setShowPayment(false)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <AnimatePresence>
@@ -265,7 +265,7 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  );
-};
+  )
+}
 
-export default SubscriptionModal;
+export default SubscriptionModal

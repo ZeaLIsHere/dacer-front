@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { useNotification } from "../contexts/NotificationContext";
-import { db } from "../config/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import React, { useState, useEffect, useMemo } from "react"
+import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
+import { useNotification } from "../contexts/NotificationContext"
+import { db } from "../config/firebase"
+import { collection, query, where, onSnapshot } from "firebase/firestore"
 import {
   Bell,
   AlertTriangle,
@@ -12,84 +12,84 @@ import {
   Package,
   Star,
   Calendar,
-  ChevronRight,
-} from "lucide-react";
-import PromotionModal from "../components/PromotionModal";
+  ChevronRight
+} from "lucide-react"
+import PromotionModal from "../components/PromotionModal"
 
-export default function Notifications() {
-  const { currentUser } = useAuth();
-  const { markAllAsRead, _notifyStockOut, _notifyLowStock } = useNotification();
-  const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showPromotionModal, setShowPromotionModal] = useState(false);
-  const [highStockProductsState, setHighStockProductsState] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState(null);
+export default function Notifications () {
+  const { currentUser } = useAuth()
+  const { markAllAsRead, _notifyStockOut, _notifyLowStock } = useNotification()
+  const navigate = useNavigate()
+  const [products, setProducts] = useState([])
+  const [sales, setSales] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showPromotionModal, setShowPromotionModal] = useState(false)
+  const [highStockProductsState, setHighStockProductsState] = useState([])
+  const [selectedProductId, setSelectedProductId] = useState(null)
 
   // Helper untuk menentukan status stok berdasarkan stok & batchSize
   const getStockStatus = (product) => {
-    const stok = Number(product.stok) || 0;
-    const batchSize = Number(product.batchSize) || 1;
+    const stok = Number(product.stok) || 0
+    const batchSize = Number(product.batchSize) || 1
 
     // Produk bundling tidak ikut perhitungan stok khusus
-    if (product.isBundle) return "stok_normal";
+    if (product.isBundle) return "stok_normal"
 
-    if (stok === 0) return "stok_habis";
-    if (stok >= 5 * batchSize) return "stok_berlebih";
-    if (stok <= 0.5 * batchSize) return "stok_menipis";
-    return "stok_normal";
-  };
-
-  useEffect(() => {
-    markAllAsRead();
-  }, [markAllAsRead]);
+    if (stok === 0) return "stok_habis"
+    if (stok >= 5 * batchSize) return "stok_berlebih"
+    if (stok <= 0.5 * batchSize) return "stok_menipis"
+    return "stok_normal"
+  }
 
   useEffect(() => {
-    if (!currentUser) return;
+    markAllAsRead()
+  }, [markAllAsRead])
+
+  useEffect(() => {
+    if (!currentUser) return
 
     const productsQuery = query(
       collection(db, "products"),
       where("userId", "==", currentUser.uid)
-    );
+    )
 
     const unsubscribeProducts = onSnapshot(productsQuery, (snapshot) => {
       const productsData = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productsData);
-      setLoading(false);
-    });
+        ...doc.data()
+      }))
+      setProducts(productsData)
+      setLoading(false)
+    })
 
     const salesQuery = query(
       collection(db, "sales"),
       where("userId", "==", currentUser.uid)
-    );
+    )
 
     const unsubscribeSales = onSnapshot(salesQuery, (snapshot) => {
       const salesData = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
-      }));
-      setSales(salesData);
-    });
+        ...doc.data()
+      }))
+      setSales(salesData)
+    })
 
     return () => {
-      unsubscribeProducts();
-      unsubscribeSales();
-    };
-  }, [currentUser]);
+      unsubscribeProducts()
+      unsubscribeSales()
+    }
+  }, [currentUser])
 
   const notifications = useMemo(() => {
-    const notifs = [];
+    const notifs = []
 
     const outOfStock = products.filter(
-      (p) => getStockStatus(p) === "stok_habis",
-    );
+      (p) => getStockStatus(p) === "stok_habis"
+    )
     const lowStock = products.filter(
-      (p) => getStockStatus(p) === "stok_menipis",
-    );
+      (p) => getStockStatus(p) === "stok_menipis"
+    )
 
     outOfStock.forEach((product) => {
       notifs.push({
@@ -102,9 +102,9 @@ export default function Notifications() {
         priority: 3,
         actionable: true,
         actionText: "Ke Halaman Stok",
-        action: () => navigate("/stock"),
-      });
-    });
+        action: () => navigate("/stock")
+      })
+    })
 
     lowStock.forEach((product) => {
       notifs.push({
@@ -115,34 +115,34 @@ export default function Notifications() {
         message: `${product.nama} tinggal ${product.stok} ${product.satuan}`,
         time: "Sekarang",
         priority: 2,
-        actionable: false,
-      });
-    });
+        actionable: false
+      })
+    })
 
     if (sales.length > 0) {
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgo = new Date()
+      weekAgo.setDate(weekAgo.getDate() - 7)
 
       const recentSales = sales.filter((sale) => {
-        const saleDate = sale.timestamp?.toDate();
-        return saleDate && saleDate >= weekAgo;
-      });
+        const saleDate = sale.timestamp?.toDate()
+        return saleDate && saleDate >= weekAgo
+      })
 
       if (recentSales.length > 0) {
-        const productSales = {};
+        const productSales = {}
         recentSales.forEach((sale) => {
           productSales[sale.productId] =
-            (productSales[sale.productId] || 0) + 1;
-        });
+            (productSales[sale.productId] || 0) + 1
+        })
 
         const bestSellingProductId = Object.keys(productSales).reduce((a, b) =>
           productSales[a] > productSales[b] ? a : b
-        );
+        )
 
         const bestSellingProduct = products.find(
           (p) => p.id === bestSellingProductId
-        );
-        const bestSellingCount = productSales[bestSellingProductId];
+        )
+        const bestSellingCount = productSales[bestSellingProductId]
 
         if (bestSellingProduct && bestSellingCount > 3) {
           notifs.push({
@@ -152,24 +152,24 @@ export default function Notifications() {
             title: "Produk Terlaris",
             message: `${bestSellingProduct.nama} terjual ${bestSellingCount}x minggu ini`,
             time: "1 hari lalu",
-            priority: 1,
-          });
+            priority: 1
+          })
         }
 
-        const today = new Date();
+        const today = new Date()
         const todaySales = sales.filter((sale) => {
-          const saleDate = sale.timestamp?.toDate();
-          return saleDate && saleDate.toDateString() === today.toDateString();
-        });
+          const saleDate = sale.timestamp?.toDate()
+          return saleDate && saleDate.toDateString() === today.toDateString()
+        })
 
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
         const yesterdaySales = sales.filter((sale) => {
-          const saleDate = sale.timestamp?.toDate();
+          const saleDate = sale.timestamp?.toDate()
           return (
             saleDate && saleDate.toDateString() === yesterday.toDateString()
-          );
-        });
+          )
+        })
 
         if (
           todaySales.length > yesterdaySales.length &&
@@ -182,16 +182,16 @@ export default function Notifications() {
             title: "Penjualan Meningkat",
             message: `Hari ini ${todaySales.length} penjualan, kemarin ${yesterdaySales.length}`,
             time: "2 jam lalu",
-            priority: 1,
-          });
+            priority: 1
+          })
         }
       }
     }
 
     if (products.length > 0) {
       const highStockProducts = products.filter(
-        (p) => getStockStatus(p) === "stok_berlebih",
-      );
+        (p) => getStockStatus(p) === "stok_berlebih"
+      )
       if (highStockProducts.length > 0) {
         notifs.push({
           id: "high-stock",
@@ -204,59 +204,59 @@ export default function Notifications() {
           actionable: true,
           actionText: "Buat Promosi",
           action: () => {
-            setHighStockProductsState(highStockProducts);
+            setHighStockProductsState(highStockProducts)
             if (highStockProducts.length > 0) {
-              setSelectedProductId(highStockProducts[0].id);
+              setSelectedProductId(highStockProducts[0].id)
             }
-            setShowPromotionModal(true);
-          },
-        });
+            setShowPromotionModal(true)
+          }
+        })
       }
     }
 
     return notifs.sort((a, b) => {
-      if (a.priority !== b.priority) return b.priority - a.priority;
-      const typeOrder = { error: 3, warning: 2, success: 1, info: 0 };
-      return typeOrder[b.type] - typeOrder[a.type];
-    });
-  }, [products, sales, navigate]);
+      if (a.priority !== b.priority) return b.priority - a.priority
+      const typeOrder = { error: 3, warning: 2, success: 1, info: 0 }
+      return typeOrder[b.type] - typeOrder[a.type]
+    })
+  }, [products, sales, navigate])
 
   const getNotificationStyle = (type) => {
     switch (type) {
       case "error":
-        return "border-red-200 bg-red-50";
+        return "border-red-200 bg-red-50"
       case "warning":
-        return "border-yellow-200 bg-yellow-50";
+        return "border-yellow-200 bg-yellow-50"
       case "success":
-        return "border-green-200 bg-green-50";
+        return "border-green-200 bg-green-50"
       case "info":
-        return "border-blue-200 bg-blue-50";
+        return "border-blue-200 bg-blue-50"
       default:
-        return "border-gray-200 bg-gray-50";
+        return "border-gray-200 bg-gray-50"
     }
-  };
+  }
 
   const getIconColor = (type) => {
     switch (type) {
       case "error":
-        return "text-red-600";
+        return "text-red-600"
       case "warning":
-        return "text-yellow-600";
+        return "text-yellow-600"
       case "success":
-        return "text-green-600";
+        return "text-green-600"
       case "info":
-        return "text-blue-600";
+        return "text-blue-600"
       default:
-        return "text-gray-600";
+        return "text-gray-600"
     }
-  };
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -319,7 +319,7 @@ export default function Notifications() {
       ) : (
         <div className="space-y-3">
           {notifications.map((notification, index) => {
-            const Icon = notification.icon;
+            const Icon = notification.icon
 
             return (
               <motion.div
@@ -367,7 +367,7 @@ export default function Notifications() {
                   </div>
                 </div>
               </motion.div>
-            );
+            )
           })}
         </div>
       )}
@@ -375,8 +375,8 @@ export default function Notifications() {
       <PromotionModal
         isOpen={showPromotionModal}
         onClose={() => {
-          setShowPromotionModal(false);
-          setSelectedProductId(null);
+          setShowPromotionModal(false)
+          setSelectedProductId(null)
         }}
         highStockProducts={highStockProductsState}
         popularProducts={products.filter(
@@ -427,5 +427,5 @@ export default function Notifications() {
         </div>
       )}
     </div>
-  );
+  )
 }

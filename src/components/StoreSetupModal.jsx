@@ -163,35 +163,36 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-accent text-white p-6">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-                  <Store className="w-6 h-6" />
+            {/* Content (scrollable) - Header di dalam scrollable area */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-primary to-accent text-white p-6">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <Store className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Setup Toko Anda</h2>
+                    <p className="text-sm opacity-90">Langkah terakhir untuk memulai bisnis</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold">Setup Toko Anda</h2>
-                  <p className="text-sm opacity-90">Langkah terakhir untuk memulai bisnis</p>
+                
+                {/* Welcome Message */}
+                <div className="bg-white bg-opacity-10 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Akun berhasil dibuat!</span>
+                  </div>
+                  <p className="text-xs mt-1 opacity-90">
+                    Sekarang mari setup toko pertama Anda untuk mulai berjualan
+                  </p>
                 </div>
               </div>
-              
-              {/* Welcome Message */}
-              <div className="bg-white bg-opacity-10 rounded-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Akun berhasil dibuat!</span>
-                </div>
-                <p className="text-xs mt-1 opacity-90">
-                  Sekarang mari setup toko pertama Anda untuk mulai berjualan
-                </p>
-              </div>
-            </div>
 
-            {/* Content (scrollable) */}
-            <div className="p-6 space-y-4 max-h-[calc(90vh-200px)] overflow-y-auto">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
               {/* Store Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -264,15 +265,15 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
                               lat: location.lat,
                               lng: location.lng
                             }
-                          }));
+                          }))
                           
                           // Dapatkan alamat dari koordinat
-                          const address = await getAddressFromCoordinates(location.lat, location.lng);
+                          const address = await getAddressFromCoordinates(location.lat, location.lng)
                           if (address) {
                             setFormData(prev => ({
                               ...prev,
-                              address: address
-                            }));
+                              address
+                            }))
                           }
                         }}
                         initialLocation={formData.location}
@@ -376,6 +377,7 @@ export default function StoreSetupModal ({ isOpen, onComplete, userEmail }) {
                 </p>
               </div>
               </form>
+              </div>
             </div>
           </motion.div>
         </motion.div>

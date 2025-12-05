@@ -1,73 +1,73 @@
 
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const midtransClient = require("midtrans-client");
-const crypto = require("crypto");
+require("dotenv").config()
+const express = require("express")
+const cors = require("cors")
+const bodyParser = require("body-parser")
+const midtransClient = require("midtrans-client")
+const crypto = require("crypto")
 
-const app = express();
+const app = express()
 
 app.use(
   cors({
     origin: "http://localhost:5173",
-    credentials: true,
-  }),
-);
-app.use(bodyParser.json());
+    credentials: true
+  })
+)
+app.use(bodyParser.json())
 
 const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
-  serverKey: process.env.MIDTRANS_SERVER_KEY,
-});
+  serverKey: process.env.MIDTRANS_SERVER_KEY
+})
 
 app.get("/", (req, res) => {
-  res.json({ message: "Midtrans backend running" });
-});
+  res.json({ message: "Midtrans backend running" })
+})
 
 app.post("/api/checkout", async (req, res) => {
   try {
-    const { orderId, grossAmount, customer } = req.body;
+    const { orderId, grossAmount, customer } = req.body
 
     if (!orderId || !grossAmount) {
       return res
         .status(400)
-        .json({ error: "orderId dan grossAmount wajib diisi" });
+        .json({ error: "orderId dan grossAmount wajib diisi" })
     }
 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: grossAmount,
+        gross_amount: grossAmount
       },
       customer_details: {
         first_name: customer?.firstName || "Customer",
         email: customer?.email || "customer@example.com",
-        phone: customer?.phone || "08123456789",
+        phone: customer?.phone || "08123456789"
       },
-      enabled_payments: ["gopay", "shopeepay", "other_qris"],
-    };
+      enabled_payments: ["gopay", "shopeepay", "other_qris"]
+    }
 
-    const transaction = await snap.createTransaction(parameter);
-    const snapToken = transaction.token;
+    const transaction = await snap.createTransaction(parameter)
+    const snapToken = transaction.token
 
-    res.json({ snapToken });
+    res.json({ snapToken })
   } catch (err) {
-    console.error("Checkout error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Checkout error:", err)
+    res.status(500).json({ error: "Internal Server Error" })
   }
-});
+})
 
-function generateSignature(orderId, statusCode, grossAmount, serverKey) {
+function generateSignature (orderId, statusCode, grossAmount, serverKey) {
   return crypto
     .createHash("sha512")
     .update(orderId + statusCode + grossAmount + serverKey)
-    .digest("hex");
+    .digest("hex")
 }
 
 app.post("/api/midtrans/notification", async (req, res) => {
   try {
-    const notification = req.body;
+    const notification = req.body
 
     const {
       order_id,
@@ -75,49 +75,49 @@ app.post("/api/midtrans/notification", async (req, res) => {
       gross_amount,
       signature_key,
       transaction_status,
-      fraud_status,
-    } = notification;
+      fraud_status
+    } = notification
 
-    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    const serverKey = process.env.MIDTRANS_SERVER_KEY
     const expectedSignature = generateSignature(
       order_id,
       status_code,
       gross_amount,
-      serverKey,
-    );
+      serverKey
+    )
 
     if (signature_key !== expectedSignature) {
-      console.warn("Invalid signature from Midtrans");
-      return res.status(403).json({ error: "Invalid signature" });
+      console.warn("Invalid signature from Midtrans")
+      return res.status(403).json({ error: "Invalid signature" })
     }
 
     console.log("Notifikasi Midtrans:", {
       order_id,
       transaction_status,
-      fraud_status,
-    });
+      fraud_status
+    })
 
     if (transaction_status === "capture" || transaction_status === "settlement") {
-      console.log(`Order ${order_id} PAID`);
+      console.log(`Order ${order_id} PAID`)
     } else if (transaction_status === "pending") {
-      console.log(`Order ${order_id} PENDING`);
+      console.log(`Order ${order_id} PENDING`)
     } else if (
       transaction_status === "deny" ||
       transaction_status === "expire" ||
       transaction_status === "cancel"
     ) {
-      console.log(`Order ${order_id} FAILED: ${transaction_status}`);
+      console.log(`Order ${order_id} FAILED: ${transaction_status}`)
     }
 
-    res.status(200).json({ message: "OK" });
+    res.status(200).json({ message: "OK" })
   } catch (err) {
-    console.error("Notification error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Notification error:", err)
+    res.status(500).json({ error: "Internal Server Error" })
   }
-});
+})
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
-  console.log(`Backend listening on port ${PORT}`);
-});
+  console.log(`Backend listening on port ${PORT}`)
+})
 

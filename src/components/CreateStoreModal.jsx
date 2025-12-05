@@ -19,7 +19,7 @@ import LocationPicker from './LocationPicker'
 export default function CreateStoreModal ({ isOpen, onClose }) {
   const { currentUser } = useAuth()
   const [loading, setLoading] = useState(false)
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(false)
   const [formData, setFormData] = useState({
     storeName: '',
     ownerName: '',
@@ -231,7 +231,7 @@ export default function CreateStoreModal ({ isOpen, onClose }) {
                               lat: location.lat,
                               lng: location.lng
                             }
-                          }));
+                          }))
                         }}
                         initialLocation={formData.location}
                       />

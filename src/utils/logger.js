@@ -94,7 +94,7 @@ export const handleAsyncOperation = async (
  */
 export const debounce = (func, wait) => {
   let timeout
-  return function executedFunction(...args) {
+  return function executedFunction (...args) {
     const later = () => {
       clearTimeout(timeout)
       func(...args)
@@ -188,7 +188,7 @@ export const formatCurrency = (amount, currency = 'IDR') => {
   try {
     const formatter = new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: currency,
+      currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     })
