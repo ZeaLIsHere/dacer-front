@@ -71,7 +71,7 @@ export default function CustomerModal ({ isOpen, onClose, onSuccess }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-10 z-50"
         onClick={handleClose}
       >
         <motion.div
@@ -79,7 +79,7 @@ export default function CustomerModal ({ isOpen, onClose, onSuccess }) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: 'spring', damping: 20 }}
-          className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+          className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

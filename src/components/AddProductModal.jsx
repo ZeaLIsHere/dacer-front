@@ -69,14 +69,14 @@ export default function AddProductModal ({ onClose, userId }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-10 p-4 z-50"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col"
+          className="bg-white rounded-2xl w-full max-w-md max-h-[75vh] flex flex-col mb-4"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header - Fixed */}

@@ -19,7 +19,7 @@ export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-10 p-4 z-50"
       onClick={onClose}
     >
       <motion.div
@@ -136,7 +136,7 @@ export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
                 className="bg-green-600 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"
               >
                 <CreditCard size={18} />
-                <span>Bayar Tunai</span>
+                <span>Bayar</span>
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }}

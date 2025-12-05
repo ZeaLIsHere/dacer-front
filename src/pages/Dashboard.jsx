@@ -246,13 +246,13 @@ export default function Dashboard () {
       <SalesInsights sales={sales} products={products} />
 
       {/* Products Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Produk Anda</h2>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg"
+          className="flex items-center justify-center space-x-2 text-white px-4 py-2 rounded-lg w-full sm:w-auto"
           style={{ backgroundColor: '#3B72FF' }}
         >
           <Plus size={16} />

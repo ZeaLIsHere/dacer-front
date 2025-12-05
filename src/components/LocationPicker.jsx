@@ -11,7 +11,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
   const [lng, setLng] = useState(initialLocation?.lng || 106.8272)
   const [lat, setLat] = useState(initialLocation?.lat || -6.1751)
   const [zoom] = useState(12)
-  const [apiKey] = useState('Nywl23O7mN6Ol38RtL5g')
+  const [apiKey] = useState(import.meta.env.VITE_MAPTILER_API_KEY)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [lngInput, setLngInput] = useState(String(initialLocation?.lng ?? 106.8272))
