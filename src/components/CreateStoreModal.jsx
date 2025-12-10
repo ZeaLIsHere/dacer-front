@@ -1,8 +1,5 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '../contexts/AuthContext'
-import { db } from '../config/firebase'
-import { collection, addDoc } from 'firebase/firestore'
 import { 
   X, 
   Store, 
@@ -15,9 +12,14 @@ import {
   MapPin as MapPinIcon
 } from 'lucide-react'
 import LocationPicker from './LocationPicker'
+import { useAuth } from '../contexts/AuthContext'
+import { useStore } from '../contexts/StoreContext'
+import { useToast } from '../contexts/ToastContext'
 
-export default function CreateStoreModal ({ isOpen, onClose }) {
+export default function CreateStoreModal ({ isOpen, onClose, onComplete }) {
   const { currentUser } = useAuth()
+  const { createStore } = useStore()
+  const { showWarning, showError, showStoreCreated } = useToast()
   const [loading, setLoading] = useState(false)
   const [showMap, setShowMap] = useState(false)
   const [formData, setFormData] = useState({
@@ -25,7 +27,7 @@ export default function CreateStoreModal ({ isOpen, onClose }) {
     ownerName: '',
     address: '',
     phone: '',
-    email: '',
+    email: currentUser?.email || '',
     description: '',
     location: {
       lat: -6.1751, // Default to Jakarta
@@ -46,75 +48,47 @@ export default function CreateStoreModal ({ isOpen, onClose }) {
     setLoading(true)
 
     try {
-      // Validate current user
-      if (!currentUser || !currentUser.uid) {
-        throw new Error('User tidak terautentikasi. Silakan login ulang.')
-      }
-
       // Validate required fields
       if (!formData.storeName?.trim() || !formData.ownerName?.trim() || !formData.address?.trim()) {
-        alert('Mohon lengkapi semua field yang wajib diisi (*)')
+        showWarning('Mohon lengkapi semua field yang wajib diisi (*)')
         setLoading(false)
         return
       }
-
-      // Sanitize and validate data
       const sanitizedData = {
-        storeName: formData.storeName.trim().substring(0, 100),
+        name: formData.storeName.trim().substring(0, 100),
         ownerName: formData.ownerName.trim().substring(0, 100),
         address: formData.address.trim().substring(0, 500),
         phone: formData.phone?.trim().substring(0, 20) || '',
-        email: formData.email?.trim().substring(0, 100) || '',
-        description: formData.description?.trim().substring(0, 1000) || '',
-        location: {
-          lat: formData.location.lat,
-          lng: formData.location.lng,
-          geohash: '' // You might want to add geohash for location queries
-        },
-        userId: currentUser.uid,
-        isActive: true,
-        totalProducts: 0,
-        totalSales: 0,
-        totalRevenue: 0,
-        createdAt: new Date() // Use regular Date instead of serverTimestamp
+        email: formData.email?.trim().substring(0, 100) || currentUser?.email || '',
+        description: formData.description?.trim().substring(0, 1000) || ''
       }
 
-      console.log('Creating store with sanitized data:', sanitizedData)
-      
-      const docRef = await addDoc(collection(db, 'stores'), sanitizedData)
-      
-      console.log('Store created successfully with ID:', docRef.id)
+      const newStore = await createStore(sanitizedData)
 
-      // Reset form
-      setFormData({
+      if (showStoreCreated) {
+        showStoreCreated(sanitizedData.name)
+      }
+
+      setFormData(prev => ({
+        ...prev,
         storeName: '',
         ownerName: '',
         address: '',
         phone: '',
-        email: '',
+        email: currentUser?.email || '',
         description: ''
-      })
+      }))
 
-      alert('✅ Toko berhasil dibuat!')
-      onClose()
-    } catch (error) {
-      console.error('Detailed error creating store:', {
-        error,
-        message: error.message,
-        code: error.code
-      })
-      
-      let errorMessage = 'Terjadi kesalahan saat membuat toko.'
-      
-      if (error.code === 'permission-denied') {
-        errorMessage = 'Tidak memiliki izin untuk membuat toko.'
-      } else if (error.code === 'invalid-argument') {
-        errorMessage = 'Data yang dikirim tidak valid.'
-      } else if (error.message) {
-        errorMessage = error.message
+      if (onComplete) {
+        onComplete(newStore)
       }
-      
-      alert(`❌ Gagal membuat toko: ${errorMessage}`)
+
+      if (onClose) {
+        onClose()
+      }
+    } catch (error) {
+      console.error('Error creating store:', error)
+      showError(error?.message ? `Gagal membuat toko: ${error.message}` : 'Gagal membuat toko. Silakan coba lagi.')
     }
 
     setLoading(false)

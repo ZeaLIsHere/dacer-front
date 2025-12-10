@@ -12,42 +12,59 @@ import {
   AlertCircle, 
   CheckCircle, 
   Clock, 
-  X 
+  X,
+  Printer 
 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import debtService from '../services/debtService'
-import CustomerModal from '../components/CustomerModal'
-import DebtPaymentModal from '../components/DebtPaymentModal'
-import CreateDebtFromCartModal from '../components/CreateDebtFromCartModal'
 import { useAuth } from '../contexts/AuthContext'
+import { useStore } from '../contexts/StoreContext'
+import { useToast } from '../contexts/ToastContext'
+import { useNotification } from '../contexts/NotificationContext'
+import { API_BASE_URL } from '../apiClient'
 
 export default function Debts () {
   const { currentUser } = useAuth()
+  const { currentStore } = useStore()
   const location = useLocation()
+  const { showSuccess, showError } = useToast()
+  const { notifyDebtPaid, notifyDebtCreated } = useNotification()
   const [debts, setDebts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedDebt, setSelectedDebt] = useState(null)
-  const [showCustomerModal, setShowCustomerModal] = useState(false)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showCreateDebtModal, setShowCreateDebtModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('tunai') // 'tunai' | 'qris'
   const [cartData, setCartData] = useState(null)
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false)
+  const [lastPaymentData, setLastPaymentData] = useState(null)
 
   // Load data
   useEffect(() => {
-    if (!currentUser) return
-
-    setLoading(true)
-    const unsubscribeDebts = debtService.subscribeToUserDebts(currentUser.uid, (data) => {
-      setDebts(data.map(debt => debtService.formatDebtForDisplay(debt)))
+    // Jika user atau store belum siap, jangan stuck di loading
+    if (!currentUser || !currentStore) {
+      setDebts([])
       setLoading(false)
-    })
-
-    return () => {
-      unsubscribeDebts()
+      return
     }
-  }, [currentUser])
+
+    async function fetchDebts () {
+      setLoading(true)
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/debts?userId=${currentUser.id}&storeId=${currentStore.id}`)
+        const { data } = await res.json()
+        setDebts(data?.debts || [])
+      } catch (err) {
+        console.error('Failed to load debts:', err)
+        setDebts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDebts()
+  }, [currentUser, currentStore])
 
   // Check for cart data from cashier
   useEffect(() => {
@@ -60,14 +77,34 @@ export default function Debts () {
     }
   }, [location.state])
 
-  // Analytics
-  const analytics = debtService.getDebtAnalytics(debts)
-  const overdueDebts = debtService.getOverdueDebts(debts)
+  // Analytics (mirroring old debtService.getDebtAnalytics)
+  const totalDebt = debts.reduce((sum, d) => sum + Number(d.amount || 0), 0)
+  const totalPaid = debts.reduce((sum, d) => sum + Number(d.amount_paid || 0), 0)
+  const totalRemaining = totalDebt - totalPaid
+  const totalDebts = debts.length
+  const unpaidDebts = debts.filter(d => d.status === 'unpaid').length
+  const partiallyPaidDebts = debts.filter(d => d.status === 'partially_paid').length
+  const paidDebts = debts.filter(d => d.status === 'paid').length
+  const overdueDebts = debts.filter(d => d.status !== 'paid' && d.due_date && new Date(d.due_date) < new Date())
+  const overdueAmount = overdueDebts.reduce((sum, d) => sum + (Number(d.amount || 0) - Number(d.amount_paid || 0)), 0)
+
+  const analytics = {
+    totalDebt,
+    totalPaid,
+    totalRemaining,
+    totalDebts,
+    unpaidDebts,
+    partiallyPaidDebts,
+    paidDebts,
+    overdueAmount
+  }
 
   // Filter debts
   const filteredDebts = debts.filter(debt => {
-    const matchesSearch = debt.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         debt.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const customerName = debt.customer_name || debt.customerName || ''
+    const description = debt.description || ''
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         description.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || debt.status === statusFilter
     
@@ -100,15 +137,175 @@ export default function Debts () {
     setShowPaymentModal(true)
   }
 
-  const handlePaymentSuccess = () => {
-    // Data will be updated automatically via real-time subscription
-    setSelectedDebt(null)
-    setShowPaymentModal(false)
+  const handlePayDebt = async () => {
+    if (!selectedDebt || !paymentAmount || paymentAmount <= 0) return
+    try {
+      // Jika metode QRIS, jalankan Midtrans terlebih dahulu
+      if (paymentMethod === 'qris') {
+        if (!window.snap) {
+          throw new Error('Layanan pembayaran QRIS tidak tersedia')
+        }
+
+        const checkoutRes = await fetch(`${API_BASE_URL}/api/payments/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            storeId: currentStore.id,
+            amount: Number(paymentAmount),
+            customer: {
+              firstName: selectedDebt.customer_name || selectedDebt.customerName || 'Customer',
+              email: 'customer@example.com',
+              phone: '08123456789'
+            }
+          })
+        })
+
+        if (!checkoutRes.ok) throw new Error('Gagal memulai pembayaran QRIS')
+
+        const checkoutData = await checkoutRes.json()
+        const snapToken = checkoutData?.data?.snapToken
+        if (!snapToken) throw new Error('Token pembayaran QRIS tidak tersedia')
+
+        await new Promise((resolve, reject) => {
+          window.snap.pay(snapToken, {
+            onSuccess: () => resolve(),
+            onPending: () => resolve(),
+            onError: (err) => reject(err),
+            onClose: () => resolve()
+          })
+        })
+      }
+
+      const newAmountPaid = Number(selectedDebt.amount_paid) + Number(paymentAmount)
+      const payload = {
+        amount_paid: newAmountPaid,
+        status: newAmountPaid >= Number(selectedDebt.amount) ? 'paid' : 'partially_paid'
+      }
+      const res = await fetch(`${API_BASE_URL}/api/debts/${selectedDebt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) throw new Error('Failed to update debt')
+      // Refresh list
+      const updated = await fetch(`${API_BASE_URL}/api/debts?userId=${currentUser.id}&storeId=${currentStore.id}`)
+      const updatedData = await updated.json()
+      setDebts(updatedData.data?.debts || [])
+
+      // Simpan data pembayaran untuk struk
+      const paymentData = {
+        debtId: selectedDebt.id,
+        timestamp: new Date(),
+        customerName: selectedDebt.customer_name || selectedDebt.customerName,
+        description: selectedDebt.description,
+        payment_method: paymentMethod,
+        totalDebt: Number(selectedDebt.amount),
+        paidBefore: Number(selectedDebt.amount_paid),
+        amountPaid: Number(paymentAmount),
+        remaining: Number(selectedDebt.amount) - newAmountPaid,
+        status: newAmountPaid >= Number(selectedDebt.amount) ? 'Lunas' : 'Sebagian'
+      }
+      setLastPaymentData(paymentData)
+
+      setShowPaymentModal(false)
+      setPaymentAmount('')
+      setPaymentMethod('tunai')
+      setSelectedDebt(null)
+      setShowPaymentSuccessModal(true)
+      showSuccess('Pembayaran hutang berhasil disimpan')
+
+      if (notifyDebtPaid) {
+        const amountPaidNow = Number(paymentAmount)
+        const remaining = Number(selectedDebt.amount) - (Number(selectedDebt.amount_paid) + amountPaidNow)
+        notifyDebtPaid(selectedDebt.customer_name || selectedDebt.customerName, amountPaidNow, remaining, () => {
+          // Fokuskan user pada halaman Debts, sudah di sini
+        })
+      }
+    } catch (err) {
+      console.error('Payment error:', err)
+      showError('Gagal membayar hutang')
+    }
   }
 
   const handleCreateDebtSuccess = () => {
     setCartData(null)
     setShowCreateDebtModal(false)
+  }
+
+  // Print receipt function untuk pembayaran hutang
+  const printDebtReceipt = (paymentData) => {
+    const receiptContent = `
+      <html>
+        <head>
+          <title>Struk Pembayaran Hutang - ${currentStore?.nama || 'Kasir'}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; padding: 20px; max-width: 400px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .footer { border-top: 2px dashed #000; padding-top: 10px; margin-top: 20px; text-align: center; }
+            .item { display: flex; justify-content: space-between; margin: 5px 0; }
+            .total { font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>${currentStore?.nama || 'Kasir'}</h2>
+            <p>${currentStore?.alamat || ''}</p>
+            <p>Telp: ${currentStore?.telepon || ''}</p>
+            <p>=====================</p>
+          </div>
+          
+          <div>
+            <p>No: ${paymentData.debtId || 'N/A'}</p>
+            <p>Tanggal: ${new Date(paymentData.timestamp).toLocaleString('id-ID')}</p>
+            <p>Kasir: ${currentUser?.nama || 'Admin'}</p>
+            <p>Pelanggan: ${paymentData.customerName}</p>
+            ${paymentData.description ? `<p>Deskripsi: ${paymentData.description}</p>` : ''}
+            <p>Metode: ${paymentData.payment_method}</p>
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <h3>Detail Pembayaran:</h3>
+            <div class="item">
+              <span>Total Hutang:</span>
+              <span>Rp ${Number(paymentData.totalDebt).toLocaleString('id-ID')}</span>
+            </div>
+            <div class="item">
+              <span>Sudah Dibayar (sebelumnya):</span>
+              <span>Rp ${Number(paymentData.paidBefore).toLocaleString('id-ID')}</span>
+            </div>
+            <div class="item">
+              <span>Dibayar Sekarang:</span>
+              <span>Rp ${Number(paymentData.amountPaid).toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+          
+          <div class="total">
+            <div class="item">
+              <span><strong>Sisa Hutang:</strong></span>
+              <span><strong>Rp ${Number(paymentData.remaining).toLocaleString('id-ID')}</strong></span>
+            </div>
+            <div class="item">
+              <span>Status:</span>
+              <span><strong>${paymentData.status}</strong></span>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>=====================</p>
+            <p>Terima kasih atas pembayaran Anda</p>
+            <p>Simpan struk ini sebagai bukti pembayaran</p>
+          </div>
+        </body>
+      </html>
+    `
+    
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(receiptContent)
+    printWindow.document.close()
+    printWindow.print()
+    printWindow.close()
   }
 
   if (loading) {
@@ -123,24 +320,28 @@ export default function Debts () {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Manajemen Hutang</h1>
-            <p className="text-gray-600 mt-1">Kelola hutang pelanggan dan pembayaran</p>
-          </div>
+        <div className="text-center mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-700 mb-2">Manajemen Hutang</h1>
+          <p className="text-gray-600">Kelola hutang pelanggan dan pembayaran</p>
+        </div>
+
+        <div className="flex justify-center sm:justify-end mb-4">
           <button
-            onClick={() => setShowCustomerModal(true)}
+            onClick={() => {
+              setCartData(null)
+              setShowCreateDebtModal(true)
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
-            <span>Tambah Pelanggan</span>
+            <span>Tambah Hutang</span>
           </button>
         </div>
 
@@ -264,14 +465,29 @@ export default function Debts () {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredDebts.map((debt, index) => (
+              {filteredDebts.map((debt, index) => {
+                const customerName = debt.customer_name || debt.customerName || '-'
+                const amount = Number(debt.amount || 0)
+                const paid = Number(debt.amount_paid || 0)
+                const remaining = amount - paid
+                const isOverdue = debt.status !== 'paid' && debt.due_date && new Date(debt.due_date) < new Date()
+                const statusText = debt.status === 'paid'
+                  ? 'Lunas'
+                  : debt.status === 'partially_paid'
+                    ? 'Sebagian'
+                    : 'Belum Bayar'
+                const dueDateText = debt.due_date
+                  ? new Date(debt.due_date).toLocaleDateString('id-ID')
+                  : '-'
+
+                return (
                 <motion.div
                   key={debt.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + index * 0.05 }}
                   className={`p-3 rounded-lg border ${
-                    debt.isOverdue 
+                    isOverdue 
                       ? 'bg-red-50 border-red-200' 
                       : debt.status === 'paid'
                       ? 'bg-green-50 border-green-200'
@@ -282,7 +498,7 @@ export default function Debts () {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
                       {getStatusIcon(debt.status)}
-                      <h3 className="font-semibold text-gray-800 text-sm">{debt.customerName}</h3>
+                      <h3 className="font-semibold text-gray-800 text-sm">{customerName}</h3>
                     </div>
                     <div className="flex items-center space-x-1">
                       <span className={`px-2 py-1 text-xs rounded-full ${
@@ -292,9 +508,9 @@ export default function Debts () {
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
                       }`}>
-                        {debt.statusText}
+                        {statusText}
                       </span>
-                      {debt.isOverdue && (
+                      {isOverdue && (
                         <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
                           Terlambat
                         </span>
@@ -311,17 +527,17 @@ export default function Debts () {
                   <div className="grid grid-cols-1 gap-2 mb-3">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-600">Total Hutang</span>
-                      <span className="text-sm font-bold text-gray-800">{debt.displayAmount}</span>
+                      <span className="text-sm font-bold text-gray-800">{formatCurrency(amount)}</span>
                     </div>
-                    {debt.paidAmount > 0 && (
+                    {paid > 0 && (
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-600">Sudah Dibayar</span>
-                        <span className="text-sm font-bold text-green-600">{debt.displayPaid}</span>
+                        <span className="text-sm font-bold text-green-600">{formatCurrency(paid)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-600">Sisa Hutang</span>
-                      <span className="text-sm font-bold text-blue-600">{debt.displayRemaining}</span>
+                      <span className="text-sm font-bold text-blue-600">{formatCurrency(remaining)}</span>
                     </div>
                   </div>
                   
@@ -329,7 +545,7 @@ export default function Debts () {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-600">Jatuh tempo: {debt.displayDueDate}</span>
+                      <span className="text-xs text-gray-600">Jatuh tempo: {dueDateText}</span>
                     </div>
                     
                     {debt.status !== 'paid' && (
@@ -343,32 +559,348 @@ export default function Debts () {
                     )}
                   </div>
                 </motion.div>
-              ))}
+              )})}
             </div>
           )}
         </div>
       </motion.div>
 
-      {/* Modals */}
-      <CustomerModal
-        isOpen={showCustomerModal}
-        onClose={() => setShowCustomerModal(false)}
-        onSuccess={() => setShowCustomerModal(false)}
-      />
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {showPaymentModal && selectedDebt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowPaymentModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={e => e.stopPropagation()}
+            >
+              <h2 className="text-xl font-bold mb-4">Bayar Utang</h2>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600">Pelanggan</p>
+                  <p className="font-medium">{selectedDebt.customer_name}</p>
+                </div>
+                {selectedDebt.description && (
+                  <div>
+                    <p className="text-sm text-gray-600">Deskripsi</p>
+                    <p className="text-sm">{selectedDebt.description}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Utang</p>
+                    <p className="font-medium">Rp {Number(selectedDebt.amount).toLocaleString('id-ID')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Sudah Dibayar</p>
+                    <p className="font-medium text-green-600">Rp {Number(selectedDebt.amount_paid).toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Jumlah Pembayaran</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={Number(selectedDebt.amount) - Number(selectedDebt.amount_paid)}
+                    placeholder="Masukkan jumlah"
+                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={paymentAmount}
+                    onChange={e => setPaymentAmount(e.target.value)}
+                  />
+                  {paymentAmount && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Sisa setelah bayar: Rp {(Number(selectedDebt.amount) - Number(selectedDebt.amount_paid) - Number(paymentAmount)).toLocaleString('id-ID')}
+                    </p>
+                  )}
+                </div>
 
-      <DebtPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        debt={selectedDebt}
-        onSuccess={handlePaymentSuccess}
-      />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Metode Pembayaran</label>
+                  <div className="space-y-3">
+                    {/* Tunai */}
+                    <div
+                      onClick={() => setPaymentMethod('tunai')}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        paymentMethod === 'tunai'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <DollarSign className={`w-5 h-5 ${paymentMethod === 'tunai' ? 'text-blue-600' : 'text-gray-400'}`} />
+                        <div>
+                          <p className="font-medium">Tunai</p>
+                          <p className="text-sm text-gray-600">Pembayaran langsung</p>
+                        </div>
+                      </div>
+                    </div>
 
-      <CreateDebtFromCartModal
-        isOpen={showCreateDebtModal}
-        onClose={() => setShowCreateDebtModal(false)}
-        cartData={cartData}
-        onSuccess={handleCreateDebtSuccess}
-      />
+                    {/* QRIS */}
+                    <div
+                      onClick={() => setPaymentMethod('qris')}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        paymentMethod === 'qris'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <CreditCard className={`w-5 h-5 ${paymentMethod === 'qris' ? 'text-blue-600' : 'text-gray-400'}`} />
+                        <div>
+                          <p className="font-medium">QRIS</p>
+                          <p className="text-sm text-gray-600">Scan QR Code untuk bayar</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false)
+                      setPaymentAmount('')
+                      setPaymentMethod('tunai')
+                      setSelectedDebt(null)
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handlePayDebt}
+                    disabled={!paymentAmount || paymentAmount <= 0}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  >
+                    Bayar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Debt from Cart / Manual Modal */}
+      <AnimatePresence>
+        {showCreateDebtModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowCreateDebtModal(false)
+              setCartData(null)
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={e => e.stopPropagation()}
+            >
+              <h2 className="text-xl font-bold mb-4">Buat Hutang Baru</h2>
+              <CreateDebtForm
+                currentUser={currentUser}
+                currentStore={currentStore}
+                cartData={cartData}
+                onSuccess={async () => {
+                  // refresh debts
+                  try {
+                    const res = await fetch(`${API_BASE_URL}/api/debts?userId=${currentUser.id}&storeId=${currentStore.id}`)
+                    const { data } = await res.json()
+                    setDebts(data?.debts || [])
+                  } catch (e) {
+                    console.error('Failed to refresh debts after create:', e)
+                  }
+                  handleCreateDebtSuccess()
+                }}
+                onClose={() => {
+                  setShowCreateDebtModal(false)
+                  setCartData(null)
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Success Modal */}
+      <AnimatePresence>
+        {showPaymentSuccessModal && lastPaymentData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowPaymentSuccessModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Pembayaran Berhasil!</h2>
+                <p className="text-gray-600 mb-1">Hutang #{lastPaymentData.debtId}</p>
+                <p className="text-sm text-gray-500 mb-6">Dibayar: Rp {Number(lastPaymentData.amountPaid).toLocaleString('id-ID')}</p>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowPaymentSuccessModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Selesai
+                  </button>
+                  <button
+                    onClick={() => printDebtReceipt(lastPaymentData)}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Printer className="w-4 h-4 inline mr-2" />
+                    Print Struk
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
+
+function CreateDebtForm ({ currentUser, currentStore, cartData, onSuccess, onClose }) {
+  const [customerName, setCustomerName] = useState('')
+  const [description, setDescription] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [amount, setAmount] = useState(cartData?.totalAmount || '')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { showSuccess, showError } = useToast()
+  const { notifyDebtCreated } = useNotification()
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!currentUser || !currentStore) return
+
+    const numericAmount = Number(amount || 0)
+    if (!customerName || numericAmount <= 0) return
+
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        userId: currentUser.id,
+        storeId: currentStore.id,
+        customer_name: customerName,
+        description,
+        amount: numericAmount,
+        amount_paid: 0,
+        status: 'unpaid',
+        due_date: dueDate || null,
+        items: cartData?.items || null,
+        total_items: cartData?.totalItems || null
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/debts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) throw new Error('Failed to create debt')
+
+      await onSuccess()
+      showSuccess('Hutang berhasil dibuat')
+
+      if (notifyDebtCreated) {
+        notifyDebtCreated(customerName, numericAmount, () => {
+          // Sudah berada di halaman Debts
+        })
+      }
+    } catch (err) {
+      console.error('Create debt error:', err)
+      showError('Gagal membuat hutang')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Nama Pelanggan</label>
+        <input
+          type="text"
+          className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={customerName}
+          onChange={e => setCustomerName(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Deskripsi</label>
+        <textarea
+          className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={2}
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Jumlah Hutang</label>
+          <input
+            type="number"
+            min="0"
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            required
+          />
+          {cartData && (
+            <p className="text-xs text-gray-500 mt-1">Diambil dari total keranjang: Rp {cartData.totalAmount.toLocaleString('id-ID')}</p>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Jatuh Tempo</label>
+          <input
+            type="date"
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={dueDate}
+            onChange={e => setDueDate(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="flex gap-2 mt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {isSubmitting ? 'Menyimpan...' : 'Simpan Hutang'}
+        </button>
+      </div>
+    </form>
+  )
+}
+

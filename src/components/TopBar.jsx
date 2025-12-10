@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Bell, Store } from 'lucide-react'
+import { Bell, Store, X } from 'lucide-react'
 import BurgerMenu from './BurgerMenu'
 import { useNotification } from '../contexts/NotificationContext'
 
@@ -45,23 +45,14 @@ export default function TopBar () {
               style={{ 
                 color: 'var(--color-text-secondary)'
               }}
-              onMouseEnter={(e) => e.target.style.color = 'var(--color-primary)'}
-              onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-secondary)' }}
             >
-              <Bell size={20} />
-              {/* Red dot for unread notifications */}
+              <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center"
-                >
-                  {unreadCount > 9 ? (
-                    <span className="text-white text-xs font-bold">9+</span>
-                  ) : (
-                    <span className="text-white text-xs font-bold">{unreadCount}</span>
-                  )}
-                </motion.div>
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </motion.div>
           </Link>

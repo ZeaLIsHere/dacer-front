@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useAuth } from '../contexts/AuthContext'
 import { Eye, EyeOff, Store } from 'lucide-react'
-import StoreSetupModal from '../components/StoreSetupModal'
+import { useAuth } from '../contexts/AuthContext'
+import CreateStoreModal from '../components/CreateStoreModal'
 
 export default function Register () {
   const [email, setEmail] = useState('')
@@ -13,7 +13,6 @@ export default function Register () {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showStoreSetup, setShowStoreSetup] = useState(false)
-  const [registeredEmail, setRegisteredEmail] = useState('')
   const { signup } = useAuth()
   const navigate = useNavigate()
 
@@ -32,13 +31,10 @@ export default function Register () {
       setError('')
       setLoading(true)
       await signup(email, password)
-      
-      // Store email for store setup
-      setRegisteredEmail(email)
-      
-      // Show store setup modal instead of navigating
-      setShowStoreSetup(true)
       setLoading(false)
+
+      // Setelah akun berhasil dibuat, tampilkan modal setup toko terlebih dahulu
+      setShowStoreSetup(true)
     } catch (error) {
       setError('Gagal membuat akun. Email mungkin sudah digunakan.')
       setLoading(false)
@@ -154,11 +150,10 @@ export default function Register () {
         </div>
       </motion.div>
 
-      {/* Store Setup Modal */}
-      <StoreSetupModal
+      <CreateStoreModal
         isOpen={showStoreSetup}
+        onClose={() => setShowStoreSetup(false)}
         onComplete={handleStoreSetupComplete}
-        userEmail={registeredEmail}
       />
     </div>
   )

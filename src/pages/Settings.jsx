@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import CreateStoreModal from "../components/CreateStoreModal"
 import SubscriptionModal from "../components/SubscriptionModal"
 import SubscriptionStatus from "../components/SubscriptionStatus"
+import { useStore } from "../contexts/StoreContext"
 import {
   Settings as SettingsIcon,
   Smartphone,
@@ -17,6 +18,7 @@ export default function Settings () {
   const [showCreateStoreModal, setShowCreateStoreModal] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const getText = (id) => id
+  const { currentStore } = useStore()
 
   return (
     <div className="space-y-6">
@@ -120,7 +122,9 @@ export default function Settings () {
               <p className="font-medium text-secondary">
                 {getText("Toko Saat Ini", "Current Store")}
               </p>
-              <p className="text-sm text-gray-600">DagangCerdas - Toko Utama</p>
+              <p className="text-sm text-gray-600">
+                {currentStore?.store_name || currentStore?.name || getText("Belum ada toko aktif", "No active store")}
+              </p>
             </div>
           </div>
         </div>

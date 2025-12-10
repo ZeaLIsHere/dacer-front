@@ -136,6 +136,32 @@ export function NotificationProvider ({ children }) {
     })
   }
 
+  const notifyDebtCreated = (customerName, amount, onViewDebt) => {
+    addNotification({
+      type: 'debt-created',
+      title: 'Hutang Baru Dicatat',
+      message: `Hutang untuk ${customerName || 'Pelanggan'} sebesar Rp ${Number(amount || 0).toLocaleString('id-ID')} telah dibuat`,
+      action: onViewDebt,
+      actionText: 'Lihat Hutang',
+      color: 'orange',
+      persistent: false
+    })
+  }
+
+  const notifyDebtPaid = (customerName, amountPaid, remaining, onViewDebt) => {
+    addNotification({
+      type: 'debt-paid',
+      title: remaining > 0 ? 'Pembayaran Hutang Tercatat' : 'Hutang Lunas',
+      message: remaining > 0
+        ? `${customerName || 'Pelanggan'} membayar Rp ${Number(amountPaid || 0).toLocaleString('id-ID')}. Sisa Rp ${Number(remaining || 0).toLocaleString('id-ID')}.`
+        : `Hutang ${customerName || 'Pelanggan'} lunas. Pembayaran Rp ${Number(amountPaid || 0).toLocaleString('id-ID')}.`,
+      action: onViewDebt,
+      actionText: 'Lihat Hutang',
+      color: remaining > 0 ? 'blue' : 'green',
+      persistent: false
+    })
+  }
+
   const value = {
     notifications,
     unreadCount,
@@ -150,7 +176,9 @@ export function NotificationProvider ({ children }) {
     notifyLowStockWithPromotion,
     notifyTransactionSuccess,
     notifyProductAdded,
-    notifyStockUpdated
+    notifyStockUpdated,
+    notifyDebtCreated,
+    notifyDebtPaid
   }
 
   return (

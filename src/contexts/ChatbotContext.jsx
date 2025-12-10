@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { useAuth } from './AuthContext'
 import { useStore } from './StoreContext'
 import { getGroqResponse } from '../services/groqService'
-import { getTodaySalesSummary } from '../services/databaseService'
+import { API_BASE_URL } from '../apiClient'
 
 const ChatbotContext = createContext()
 
@@ -92,20 +92,26 @@ export function ChatbotProvider ({ children }) {
     greetings: ['halo', 'hai', 'hello', 'hi', 'selamat', 'pagi', 'siang', 'sore', 'malam']
   }), [])
 
-  // Fetch real-time data for smart responses
+  // Fetch real-time data dari backend PostgreSQL
   const fetchRealtimeData = useCallback(async () => {
-    if (!currentUser?.uid) {
-      return null
-    }
-    
+    if (!currentUser || !currentStore) return null
     try {
-      const summary = await getTodaySalesSummary(currentUser.uid)
-      return summary
-    } catch (error) {
-      console.error('Error fetching realtime data:', error)
+      const [summaryRes, productRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/sales/summary?userId=${currentUser.id}&storeId=${currentStore.id}`),
+        fetch(`${API_BASE_URL}/api/products?userId=${currentUser.id}&storeId=${currentStore.id}`)
+      ])
+      const summaryData = await summaryRes.json()
+      const productData = await productRes.json()
+      return {
+        sales: summaryData.data?.sales || [],
+        summary: summaryData.data?.summary || {},
+        products: productData.data?.products || []
+      }
+    } catch (err) {
+      console.error('Chatbot fetch error:', err)
       return null
     }
-  }, [currentUser])
+  }, [currentUser, currentStore])
 
   // Smart Response Generator - Only real-time data handling
   const generateSmartResponse = useCallback(async (userMessage) => {

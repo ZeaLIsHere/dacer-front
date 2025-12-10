@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
@@ -15,22 +15,22 @@ import { useToast } from './contexts/ToastContext'
 import './index.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-// Lazy load pages for code splitting
-const Login = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Cashier = lazy(() => import('./pages/Cashier'))
-const Stock = lazy(() => import('./pages/Stock'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-const Statistics = lazy(() => import('./pages/Statistics'))
-const Account = lazy(() => import('./pages/Account'))
-const Settings = lazy(() => import('./pages/Settings'))
-const TodayRevenue = lazy(() => import('./pages/TodayRevenue'))
-const CollectiveShopping = lazy(() => import('./pages/CollectiveShopping'))
-const ChatbotPage = lazy(() => import('./pages/ChatbotPage'))
-const LocationPage = lazy(() => import('./pages/LocationPage'))
-const Debts = lazy(() => import('./pages/Debts'))
-const PromotionManagement = lazy(() => import('./pages/PromotionManagement'))
+// Directly import pages (non-lazy) to reduce Suspense-related DOM issues in dev
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import Cashier from './pages/Cashier'
+import Stock from './pages/Stock'
+import Notifications from './pages/Notifications'
+import Statistics from './pages/Statistics'
+import Account from './pages/Account'
+import Settings from './pages/Settings'
+import TodayRevenue from './pages/TodayRevenue'
+import CollectiveShopping from './pages/CollectiveShopping'
+import ChatbotPage from './pages/ChatbotPage'
+import LocationPage from './pages/LocationPage'
+import Debts from './pages/Debts'
+import PromotionManagement from './pages/PromotionManagement'
 
 // Inner App component that uses toast context
 function AppContent () {
@@ -38,8 +38,7 @@ function AppContent () {
 
   return (
     <div className="App">
-      <Suspense fallback={<LoadingSpinner message="Memuat halaman..." type="default" />}>
-        <Routes>
+      <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={
@@ -135,7 +134,6 @@ function AppContent () {
           } />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-      </Suspense>
       
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />

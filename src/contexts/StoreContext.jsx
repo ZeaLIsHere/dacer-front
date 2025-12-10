@@ -1,19 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "./AuthContext"
-import { db } from "../config/firebase"
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  doc,
-  updateDoc
-} from "firebase/firestore"
-import storeStatsService from "../services/storeStatsService"
+import { API_BASE_URL } from '../apiClient'
 
 const StoreContext = createContext()
 
-export function useStore () {
+export function useStore() {
   const context = useContext(StoreContext)
   if (!context) {
     throw new Error("useStore must be used within a StoreProvider")
@@ -21,7 +12,7 @@ export function useStore () {
   return context
 }
 
-export function StoreProvider ({ children }) {
+export function StoreProvider({ children }) {
   const { currentUser } = useAuth()
   const [stores, setStores] = useState([])
   const [currentStore, setCurrentStore] = useState(null)
@@ -29,239 +20,135 @@ export function StoreProvider ({ children }) {
   const [storeStats, setStoreStats] = useState({
     totalSales: 0,
     totalRevenue: 0,
-    todaySales: 0,
+    totalProfit: 0,
+    totalProducts: 0,
     todayRevenue: 0
   })
 
-  // Listen to user's stores
+  // Fetch stores from backend API ketika user login
   useEffect(() => {
-    if (!currentUser) {
-      setStores([])
-      setCurrentStore(null)
-      setLoading(false)
-      return
-    }
-
-    // Set timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      console.log("Firestore loading timeout, switching to fallback mode")
-
-      // Try to load from localStorage
-      const tempStoreData = localStorage.getItem("tempStore")
-      if (tempStoreData) {
-        try {
-          const tempStore = JSON.parse(tempStoreData)
-          if (tempStore.userId === currentUser.uid) {
-            setStores([tempStore])
-            setCurrentStore(tempStore)
-            console.log(
-              "Using temporary store from localStorage due to timeout:",
-              tempStore
-            )
-          }
-        } catch (error) {
-          console.error("Error parsing temporary store data:", error)
-        }
+    async function fetchStores() {
+      if (!currentUser) {
+        setStores([])
+        setCurrentStore(null)
+        setLoading(false)
+        return
       }
 
-      setLoading(false)
-    }, 5000) // 5 second timeout
-
-    const storesQuery = query(
-      collection(db, "stores"),
-      where("userId", "==", currentUser.uid)
-    )
-
-    const unsubscribe = onSnapshot(
-      storesQuery,
-      (snapshot) => {
-        clearTimeout(loadingTimeout) // Clear timeout if successful
-
-        try {
-          const storesData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-
-          // Check for temporary store in localStorage
-          const tempStoreData = localStorage.getItem("tempStore")
-          if (tempStoreData) {
-            try {
-              const tempStore = JSON.parse(tempStoreData)
-              if (tempStore.userId === currentUser.uid) {
-                // Check if this temp store is already in Firestore
-                const existsInFirestore = storesData.some(
-                  (store) =>
-                    store.storeName === tempStore.storeName &&
-                    store.ownerName === tempStore.ownerName
-                )
-
-                if (!existsInFirestore) {
-                  storesData.push(tempStore)
-                  console.log(
-                    "Added temporary store from localStorage:",
-                    tempStore
-                  )
-                } else {
-                  // Remove temp store if it exists in Firestore
-                  localStorage.removeItem("tempStore")
-                  console.log(
-                    "Removed temporary store as it exists in Firestore"
-                  )
-                }
-              }
-            } catch (error) {
-              console.error("Error parsing temporary store data:", error)
-              localStorage.removeItem("tempStore") // Remove corrupted data
-            }
-          }
-
-          setStores(storesData)
-
-          // Set current store (first store or previously selected)
-          const savedStoreId = localStorage.getItem("currentStoreId")
-          let selectedStore = null
-
-          if (savedStoreId) {
-            selectedStore = storesData.find(
-              (store) => store.id === savedStoreId
-            )
-          }
-
-          if (!selectedStore && storesData.length > 0) {
-            selectedStore = storesData[0]
-            // Save the selected store ID
-            localStorage.setItem("currentStoreId", selectedStore.id)
-          }
-
-          setCurrentStore(selectedStore)
-          setLoading(false)
-        } catch (error) {
-          console.error("Error processing stores data:", error)
-          setLoading(false)
-        }
-      },
-      (error) => {
-        clearTimeout(loadingTimeout) // Clear timeout on error
-        console.error("Firestore error, using fallback mode:", error)
-
-        // Enhanced error handling based on error type
-        if (error.code === "permission-denied") {
-          console.log("Permission denied - using localStorage fallback")
-        } else if (error.code === "unavailable") {
-          console.log("Firestore unavailable - using localStorage fallback")
-        } else {
-          console.log("Unknown Firestore error - using localStorage fallback")
-        }
-
-        // Fallback: Try to load from localStorage
-        const tempStoreData = localStorage.getItem("tempStore")
-        if (tempStoreData) {
-          try {
-            const tempStore = JSON.parse(tempStoreData)
-            if (tempStore.userId === currentUser.uid) {
-              setStores([tempStore])
-              setCurrentStore(tempStore)
-              console.log(
-                "Using temporary store from localStorage:",
-                tempStore
-              )
-            }
-          } catch (error) {
-            console.error("Error parsing temporary store data:", error)
-            localStorage.removeItem("tempStore")
-          }
-        } else {
-          // No stores available
+      setLoading(true)
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/stores?userId=${currentUser.id}`)
+        if (!response.ok) {
+          console.error('Gagal mengambil data toko')
           setStores([])
           setCurrentStore(null)
+        } else {
+          const data = await response.json()
+          const storeList = data.stores || []
+          setStores(storeList)
+          // pilih store pertama sebagai currentStore jika belum ada
+          if (storeList.length > 0 && !currentStore) {
+            setCurrentStore(storeList[0])
+          }
         }
-
+      } catch (error) {
+        console.error('Error fetching stores:', error)
+        setStores([])
+        setCurrentStore(null)
+      } finally {
         setLoading(false)
       }
-    )
-
-    return () => {
-      clearTimeout(loadingTimeout) // Clear timeout on cleanup
-      unsubscribe()
     }
+
+    fetchStores()
   }, [currentUser])
 
-  // Listen to store statistics updates
-  useEffect(() => {
-    if (!currentUser?.uid) {
-      setStoreStats({
-        totalSales: 0,
-        totalRevenue: 0,
-        todaySales: 0,
-        todayRevenue: 0
-      })
-      return
+  // Create store via backend API
+  async function createStore(storeData) {
+    if (!currentUser) {
+      throw new Error('User belum login')
     }
 
-    const unsubscribe = storeStatsService.getStoreStats(
-      currentUser?.uid,
-      (stats) => {
-        setStoreStats(stats)
-
-        // Update current store with latest stats
-        setCurrentStore((prev) =>
-          prev
-            ? {
-                ...prev,
-                totalSales: stats.totalSales,
-                totalRevenue: stats.totalRevenue
-              }
-            : null
-        )
-      }
-    )
-
-    return unsubscribe
-  }, [currentUser?.uid])
-
-  // Switch to different store
-  const switchStore = (storeId) => {
-    const store = stores.find((s) => s.id === storeId)
-    if (store) {
-      setCurrentStore(store)
-      localStorage.setItem("currentStoreId", storeId)
+    const payload = {
+      userId: currentUser.id,
+      name: storeData.name,
+      owner_name: storeData.ownerName || storeData.owner_name || currentUser.name || '',
+      address: storeData.address || '',
+      phone: storeData.phone || '',
+      email: storeData.email || currentUser.email,
+      description: storeData.description || ''
     }
+
+    const response = await fetch(`${API_BASE_URL}/api/stores`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Gagal membuat toko')
+    }
+
+    const data = await response.json()
+    const newStore = data.store
+    setStores(prev => [...prev, newStore])
+    setCurrentStore(newStore)
+    return newStore
   }
 
-  // Update store data
-  const updateStore = async (storeId, updateData) => {
-    try {
-      const storeRef = doc(db, "stores", storeId)
-      await updateDoc(storeRef, updateData)
-    } catch (error) {
-      console.error("Error creating store:", error)
-      throw error
+  // Update store via backend API
+  async function updateStore(storeId, updateData) {
+    if (!currentUser) {
+      throw new Error('User belum login')
     }
-  }
 
-  // Get store statistics
-  const getStoreStats = (storeId) => {
-    const store = stores.find((s) => s.id === storeId)
-    return {
-      totalProducts: store?.totalProducts || 0,
-      totalSales: store?.totalSales || 0,
-      totalRevenue: store?.totalRevenue || 0,
-      isActive: store?.isActive || false
+    const payload = {
+      userId: currentUser.id,
+      name: updateData.name,
+      owner_name: updateData.ownerName || updateData.owner_name,
+      address: updateData.address,
+      phone: updateData.phone,
+      email: updateData.email,
+      description: updateData.description,
+      is_active: updateData.is_active
     }
+
+    const response = await fetch(`${API_BASE_URL}/api/stores/${storeId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Gagal mengupdate toko')
+    }
+
+    const data = await response.json()
+    const updatedStore = data.store
+
+    setStores(prev => prev.map(store => store.id === storeId ? updatedStore : store))
+    if (currentStore && currentStore.id === storeId) {
+      setCurrentStore(updatedStore)
+    }
+
+    return updatedStore
   }
 
   const value = {
     stores,
     currentStore,
+    setCurrentStore,
     loading,
     storeStats,
-    switchStore,
-    updateStore,
-    getStoreStats
+    createStore,
+    updateStore
   }
 
   return (
-    <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
+    <StoreContext.Provider value={value}>
+      {children}
+    </StoreContext.Provider>
   )
 }

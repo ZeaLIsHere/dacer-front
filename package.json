@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@maptiler/sdk": "^3.8.0",
-    "firebase": "^10.5.0",
     "framer-motion": "^10.16.4",
     "groq-sdk": "^0.37.0",
     "lucide-react": "^0.288.0",
     "maplibre-gl": "^5.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.16.0"
+    "react-router-dom": "^6.16.0",
+    "recharts": "^3.5.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

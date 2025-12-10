@@ -1,133 +1,90 @@
-﻿import React, { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { useAuth } from "../contexts/AuthContext"
-import { useStore } from "../contexts/StoreContext"
-import { db } from "../config/firebase"
-import { collection, query, where, onSnapshot } from "firebase/firestore"
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
   BarChart3,
   TrendingUp,
-  Calendar,
+  TrendingDown,
   DollarSign,
   Package,
-  ShoppingCart,
+  Calendar,
   Filter,
   ChevronDown,
   ChevronUp,
   X,
-  Lightbulb,
-  Target,
-  Clock,
-  TrendingDown,
-  PieChart,
+  AlertTriangle,
+  Activity,
   Award,
   Star,
-  AlertTriangle
-} from "lucide-react"
+  ShoppingCart,
+  Lightbulb
+} from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import { useStore } from '../contexts/StoreContext'
+import { useToast } from '../contexts/ToastContext'
+import { API_BASE_URL } from '../apiClient'
 
-// Simple Pie Chart Component
-const SimplePieChart = ({ data, size = 120 }) => {
-  if (!data || data.length === 0) return null
-
-  const radius = size / 2 - 10
-  const centerX = size / 2
-  const centerY = size / 2
-
-  const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
-    const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0
-    return {
-      x: centerX + radius * Math.cos(angleInRadians),
-      y: centerY + radius * Math.sin(angleInRadians)
-    }
-  }
-
-  
-
-  const createArcPath = (startAngle, endAngle, radius, centerX, centerY) => {
-    const start = polarToCartesian(centerX, centerY, radius, endAngle)
-    const end = polarToCartesian(centerX, centerY, radius, startAngle)
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
-
-    return [
-      "M",
-      centerX,
-      centerY,
-      "L",
-      start.x,
-      start.y,
-      "A",
-      radius,
-      radius,
-      0,
-      largeArcFlag,
-      0,
-      end.x,
-      end.y,
-      "Z"
-    ].join(" ")
-  }
-
-  let cumulativePercentage = 0
-
-  return (
-    <div className="flex items-center space-x-4">
-      <svg width={size} height={size} className="transform -rotate-90">
-        {data.map((segment, index) => {
-          const startAngle = cumulativePercentage * 3.6
-          const endAngle = (cumulativePercentage + segment.percentage) * 3.6
-          cumulativePercentage += segment.percentage
-
-          return (
-            <path
-              key={index}
-              d={createArcPath(startAngle, endAngle, radius, centerX, centerY)}
-              fill={segment.color}
-              stroke="white"
-              strokeWidth="2"
-            />
-          )
-        })}
-      </svg>
-
-      <div className="space-y-2">
-        {data.map((segment, index) => (
-          <div key={index} className="flex items-center space-x-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: segment.color }}
-            ></div>
-            <div className="text-sm">
-              <div className="font-medium text-gray-800">{segment.name}</div>
-              <div className="text-gray-600">
-                {segment.percentage.toFixed(1)}% • Rp{" "}
-                {segment.value.toLocaleString("id-ID")}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-export default function Statistics() {
-  const { currentUser } = useAuth();
-  const { currentStore, storeStats } = useStore();
-  const [sales, setSales] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filterPeriod, setFilterPeriod] = useState("today"); // all, today, week, month, year, custom
-  const [customDateRange, setCustomDateRange] = useState({
-    start: "",
-    end: ""
-  })
+export default function Statistics () {
+  const { currentUser } = useAuth()
+  const { currentStore } = useStore()
+  const { showNetworkError, showError } = useToast()
+  const [summary, setSummary] = useState(null)
+  const [sales, setSales] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filterPeriod, setFilterPeriod] = useState('week') // all, today, week, month, year, custom
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' })
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [showInsightModal, setShowInsightModal] = useState(false)
-  const [dateRangeError, setDateRangeError] = useState("")
+  const [dateRangeError, setDateRangeError] = useState('')
 
-  // Validate custom date range
+  useEffect(() => {
+    if (!currentUser || !currentStore) {
+      setSummary(null)
+      setSales([])
+      setProducts([])
+      setLoading(false)
+      return
+    }
+
+    async function fetchData () {
+      setLoading(true)
+      try {
+        const [summaryRes, productsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/sales/summary?userId=${currentUser.id}&storeId=${currentStore.id}`),
+          fetch(`${API_BASE_URL}/api/products?userId=${currentUser.id}&storeId=${currentStore.id}`)
+        ])
+
+        if (!summaryRes.ok || !productsRes.ok) {
+          throw new Error('Failed to load statistics')
+        }
+
+        const summaryData = await summaryRes.json()
+        const productsData = await productsRes.json()
+
+        setSummary(summaryData.data?.summary || null)
+        setSales(summaryData.data?.sales || [])
+        setProducts(productsData.data?.products || [])
+      } catch (err) {
+        console.error('Failed to load statistics:', err)
+        setSummary(null)
+        setSales([])
+        setProducts([])
+
+        if (showNetworkError) {
+          showNetworkError()
+        } else {
+          showError('Gagal memuat data statistik. Periksa koneksi atau coba lagi.')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [currentUser, currentStore])
+
   const validateDateRange = (start, end) => {
     if (!start || !end) {
-      setDateRangeError("")
+      setDateRangeError('')
       return true
     }
 
@@ -135,152 +92,76 @@ export default function Statistics() {
     const endDate = new Date(end)
 
     if (startDate > endDate) {
-      setDateRangeError(
-        'Tanggal "Dari" tidak boleh lebih besar dari tanggal "Sampai"'
-      )
+      setDateRangeError('Tanggal "Dari" tidak boleh lebih besar dari tanggal "Sampai"')
       return false
     }
 
-    // Check if date range is too far in the future
     const today = new Date()
-    today.setHours(23, 59, 59, 999) // End of today
+    today.setHours(23, 59, 59, 999)
     if (startDate > today) {
       setDateRangeError('Tanggal "Dari" tidak boleh lebih besar dari hari ini')
       return false
     }
-
     if (endDate > today) {
-      setDateRangeError(
-        'Tanggal "Sampai" tidak boleh lebih besar dari hari ini'
-      )
+      setDateRangeError('Tanggal "Sampai" tidak boleh lebih besar dari hari ini')
       return false
     }
 
-    // Check if date range is more than 1 year
     const oneYearAgo = new Date()
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     if (startDate < oneYearAgo) {
-      setDateRangeError("Rentang tanggal maksimal 1 tahun dari hari ini")
+      setDateRangeError('Rentang tanggal maksimal 1 tahun dari hari ini')
       return false
     }
 
-    setDateRangeError("")
+    setDateRangeError('')
     return true
   }
 
-  // Handle custom date range changes
   const handleDateRangeChange = (field, value) => {
     const newRange = { ...customDateRange, [field]: value }
     setCustomDateRange(newRange)
-
-    // Validate when both dates are filled
     if (newRange.start && newRange.end) {
       validateDateRange(newRange.start, newRange.end)
     } else {
-      setDateRangeError("")
+      setDateRangeError('')
     }
   }
 
-  useEffect(() => {
-    if (!currentUser) return
-
-    // Listen to sales data
-    const salesQuery = query(
-      collection(db, "sales"),
-      where("userId", "==", currentUser.uid)
-    )
-
-    const unsubscribeSales = onSnapshot(
-      salesQuery,
-      (snapshot) => {
-        const salesData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-
-        // Sort by timestamp in JavaScript (newest first)
-        salesData.sort((a, b) => {
-          if (!a.timestamp || !b.timestamp) return 0
-          return b.timestamp.toDate() - a.timestamp.toDate()
-        })
-
-        setSales(salesData)
-        setLoading(false)
-      },
-      (error) => {
-        console.error("Error fetching sales:", error)
-        setLoading(false)
-      }
-    )
-
-    // Listen to products data
-    const productsQuery = query(
-      collection(db, "products"),
-      where("userId", "==", currentUser.uid)
-    )
-
-    const unsubscribeProducts = onSnapshot(
-      productsQuery,
-      (snapshot) => {
-        const productsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-        setProducts(productsData)
-      },
-      (error) => {
-        console.error("Error fetching products:", error)
-      }
-    )
-
-    return () => {
-      unsubscribeSales()
-      unsubscribeProducts()
-    }
-  }, [currentUser])
-
-  // Filter sales based on selected period
   const getFilteredSales = () => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-    return sales.filter((sale) => {
+    return sales.filter(sale => {
       if (!sale.timestamp) return false
-
-      const saleDate = sale.timestamp.toDate()
+      const saleDate = new Date(sale.timestamp)
 
       switch (filterPeriod) {
-        case "all":
-          return true;
-        case "today":
+        case 'all':
+          return true
+        case 'today':
           return saleDate >= today
-
-        case "week": {
+        case 'week': {
           const weekAgo = new Date(today)
           weekAgo.setDate(weekAgo.getDate() - 7)
           return saleDate >= weekAgo
         }
-
-        case "month": {
+        case 'month': {
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
           return saleDate >= monthStart
         }
-
-        case "year": {
+        case 'year': {
           const yearStart = new Date(now.getFullYear(), 0, 1)
           return saleDate >= yearStart
         }
-
-        case "custom": {
+        case 'custom': {
           if (!customDateRange.start || !customDateRange.end) return true
-          // Don't filter if there's a date range error
           if (dateRangeError) return true
           const startDate = new Date(customDateRange.start)
           const endDate = new Date(customDateRange.end)
-          endDate.setHours(23, 59, 59, 999) // Include end of day
+          endDate.setHours(23, 59, 59, 999)
           return saleDate >= startDate && saleDate <= endDate
         }
-
         default:
           return true
       }
@@ -289,36 +170,11 @@ export default function Statistics() {
 
   const filteredSales = getFilteredSales()
 
-  const getTotalProfit = () => {
-    return filteredSales.reduce((total, sale) => {
-      if (typeof sale.totalProfit === 'number') return total + sale.totalProfit;
-      if (Array.isArray(sale.items)) {
-        const p = sale.items.reduce((s, i) => s + ((i.harga - (i.harga_modal || 0)) * (i.quantity || 1)), 0);
-        return total + p;
-      }
-      return total;
-    }, 0);
-  };
-
-  // Calculate statistics - use real-time data from storeStats
   const getTotalRevenue = () => {
-    // Use real-time data from storeStats if available, otherwise fallback to filtered sales
-    if (storeStats.totalRevenue > 0) {
-      return storeStats.totalRevenue
-    }
-    return filteredSales.reduce(
-      (total, sale) => total + (sale.price || sale.totalAmount || 0),
-      0
-    )
+    return filteredSales.reduce((total, sale) => total + Number(sale.total_amount || 0), 0)
   }
 
-  const getTotalTransactions = () => {
-    // Use real-time data from storeStats if available, otherwise fallback to filtered sales
-    if (storeStats.totalSales > 0) {
-      return storeStats.totalSales
-    }
-    return filteredSales.length
-  }
+  const getTotalTransactions = () => filteredSales.length
 
   const getAverageTransaction = () => {
     const total = getTotalRevenue()
@@ -326,978 +182,444 @@ export default function Statistics() {
     return count > 0 ? total / count : 0
   }
 
+  const getTotalProfit = () => {
+    // Approximate profit: sum over items (sale price - cost) * qty
+    const productMap = products.reduce((map, p) => {
+      map[p.id] = p
+      return map
+    }, {})
+
+    return filteredSales.reduce((total, sale) => {
+      if (!Array.isArray(sale.items)) return total
+      const saleProfit = sale.items.reduce((s, item) => {
+        const prod = productMap[item.id]
+        const qty = item.qty || item.quantity || 1
+        const price = Number(item.harga || item.price || 0)
+        const cost = prod ? Number(prod.harga_modal || 0) : 0
+        return s + (price - cost) * qty
+      }, 0)
+      return total + saleProfit
+    }, 0)
+  }
+
   const getTopProducts = () => {
-    try {
-      const productSales = {}
+    const productSales = {}
 
-      if (!filteredSales || filteredSales.length === 0) {
-        return []
-      }
+    filteredSales.forEach(sale => {
+      if (!Array.isArray(sale.items)) return
+      sale.items.forEach(item => {
+        const name = item.nama || item.productName || 'Produk Tanpa Nama'
+        const qty = item.qty || item.quantity || 1
+        const revenue = Number(item.subtotal || 0)
 
-      filteredSales.forEach((sale) => {
-        // Handle both old format (single product) and new format (items array)
-        if (sale.items && Array.isArray(sale.items)) {
-          // New format with items array
-          sale.items.forEach((item) => {
-            const productName =
-              item.nama || item.productName || "Unknown Product"
-            const quantity = item.quantity || 1
-            const revenue = (item.harga || item.price || 0) * quantity
-
-            if (productSales[productName]) {
-              productSales[productName].count += quantity
-              productSales[productName].revenue += revenue
-              productSales[productName].transactions += 1
-            } else {
-              productSales[productName] = {
-                name: productName,
-                count: quantity,
-                revenue,
-                transactions: 1
-              }
-            }
-          })
-        } else if (sale.productName) {
-          // Old format (single product per sale)
-          const productName = sale.productName
-          const revenue = sale.price || sale.totalAmount || 0
-
-          if (productSales[productName]) {
-            productSales[productName].count += 1
-            productSales[productName].revenue += revenue
-            productSales[productName].transactions += 1
-          } else {
-            productSales[productName] = {
-              name: productName,
-              count: 1,
-              revenue,
-              transactions: 1
-            }
-          }
+        if (!productSales[name]) {
+          productSales[name] = { name, qty: 0, revenue: 0 }
         }
+        productSales[name].qty += qty
+        productSales[name].revenue += revenue
       })
+    })
 
-      return Object.values(productSales)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5)
-    } catch (error) {
-      console.error("Error in getTopProducts:", error)
-      return []
-    }
+    return Object.values(productSales)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
   }
 
-  // Get revenue distribution for pie chart
-  const getRevenueDistribution = () => {
-    try {
-      const topProducts = getTopProducts()
-      const totalRevenue = getTotalRevenue()
-
-      if (totalRevenue === 0 || topProducts.length === 0) {
-        return []
-      }
-
-      const topProduct = topProducts[0]
-      if (!topProduct) {
-        return []
-      }
-
-      const topProductRevenue = topProduct.revenue || 0
-      const otherProductsRevenue = totalRevenue - topProductRevenue
-
-      const topProductPercentage = (topProductRevenue / totalRevenue) * 100
-      const otherProductsPercentage =
-        (otherProductsRevenue / totalRevenue) * 100
-
-      return [
-        {
-          name: topProduct.name || "Unknown Product",
-          value: topProductRevenue,
-          percentage: topProductPercentage,
-          color: "#FF7A00" // Primary color
-        },
-        {
-          name: "Produk Lainnya",
-          value: otherProductsRevenue,
-          percentage: otherProductsPercentage,
-          color: "#E5E7EB" // Gray color
-        }
-      ]
-    } catch (error) {
-      console.error("Error in getRevenueDistribution:", error)
-      return []
-    }
-  }
-
-  // Group sales by date for chart
   const getSalesByDate = () => {
     const salesByDate = {}
 
-    filteredSales.forEach((sale) => {
+    filteredSales.forEach(sale => {
       if (!sale.timestamp) return
-
-      const date = sale.timestamp.toDate().toLocaleDateString("id-ID")
-      const revenue = sale.price || sale.totalAmount || 0
-
-      if (salesByDate[date]) {
-        salesByDate[date] += revenue
-      } else {
-        salesByDate[date] = revenue
-      }
+      const d = new Date(sale.timestamp)
+      const key = d.toLocaleDateString('id-ID')
+      const revenue = Number(sale.total_amount || 0)
+      salesByDate[key] = (salesByDate[key] || 0) + revenue
     })
 
     return Object.entries(salesByDate)
-      .sort(
-        ([a], [b]) =>
-          new Date(a.split("/").reverse().join("-")) -
-          new Date(b.split("/").reverse().join("-"))
-      )
-      .slice(-7) // Last 7 days
+      .sort(([a], [b]) => {
+        const [da, ma, ya] = a.split('/')
+        const [db, mb, yb] = b.split('/')
+        return new Date(`${ya}-${ma}-${da}`) - new Date(`${yb}-${mb}-${db}`)
+      })
+      .slice(-7)
   }
 
-  const getPeriodLabel = () => {
-    switch (filterPeriod) {
-      case "all":
-        return "Semua";
-      case "today":
-        return "Hari Ini"
-      case "week":
-        return "7 Hari Terakhir"
-      case "month":
-        return "Bulan Ini"
-      case "year":
-        return "Tahun Ini"
-      case "custom":
-        return "Periode Kustom"
-      default:
-        return "Semua Data"
-    }
-  }
-
-  // Get busiest day of the week
   const getBusiestDay = () => {
-    const now = new Date()
-    const weekAgo = new Date(now)
+    const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
 
-    const weekSales = sales.filter((sale) => {
+    const weekSales = sales.filter(sale => {
       if (!sale.timestamp) return false
-      const saleDate = sale.timestamp.toDate()
-      return saleDate >= weekAgo
+      const date = new Date(sale.timestamp)
+      return date >= weekAgo
     })
 
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
     const dayCount = {}
-    const dayNames = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu"
-    ]
 
-    weekSales.forEach((sale) => {
-      const dayOfWeek = sale.timestamp.toDate().getDay()
-      const dayName = dayNames[dayOfWeek]
+    weekSales.forEach(sale => {
+      const d = new Date(sale.timestamp)
+      const dayName = dayNames[d.getDay()]
       dayCount[dayName] = (dayCount[dayName] || 0) + 1
     })
 
-    if (Object.keys(dayCount).length === 0) return null
-
-    const busiestDay = Object.entries(dayCount).sort(
-      ([, a], [, b]) => b - a
-    )[0]
-
-    return {
-      day: busiestDay[0],
-      count: busiestDay[1],
-      dayIndex: dayNames.indexOf(busiestDay[0])
-    }
+    const entries = Object.entries(dayCount)
+    if (!entries.length) return null
+    const [day, count] = entries.sort(([, a], [, b]) => b - a)[0]
+    return { day, count }
   }
 
-  // Get sales data for the busiest day
-  const getBusiestDayDetails = () => {
-    const busiestDay = getBusiestDay()
-    if (!busiestDay) return null
-
-    const now = new Date()
-    const weekAgo = new Date(now)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-
-    // Find the most recent occurrence of the busiest day
-    const busiestDaySales = sales.filter((sale) => {
-      if (!sale.timestamp) return false
-      const saleDate = sale.timestamp.toDate()
-      return saleDate >= weekAgo && saleDate.getDay() === busiestDay.dayIndex
-    })
-
-    // Group by product
-    const productSales = {}
-    let totalRevenue = 0
-
-    busiestDaySales.forEach((sale) => {
-      const revenue = sale.price || sale.totalAmount || 0
-      totalRevenue += revenue
-
-      // Handle both old format (single product) and new format (items array)
-      if (sale.items && Array.isArray(sale.items)) {
-        sale.items.forEach((item) => {
-          const productName =
-            item.nama || item.productName || "Unknown Product"
-          const quantity = item.quantity || 1
-          const itemRevenue = (item.harga || item.price || 0) * quantity
-
-          if (productSales[productName]) {
-            productSales[productName].count += quantity
-            productSales[productName].revenue += itemRevenue
-          } else {
-            productSales[productName] = {
-              name: productName,
-              count: quantity,
-              revenue: itemRevenue
-            }
-          }
-        })
-      } else if (sale.productName) {
-        if (productSales[sale.productName]) {
-          productSales[sale.productName].count += 1
-          productSales[sale.productName].revenue += revenue
-        } else {
-          productSales[sale.productName] = {
-            name: sale.productName,
-            count: 1,
-            revenue
-          }
-        }
-      }
-    })
-
-    return {
-      day: busiestDay.day,
-      totalTransactions: busiestDay.count,
-      totalRevenue,
-      products: Object.values(productSales).sort(
-        (a, b) => b.revenue - a.revenue
-      )
-    }
-  }
-
-  // Generate AI suggestions based on busiest day analysis
   const getAISuggestions = () => {
-    const details = getBusiestDayDetails()
-    if (!details) return []
+    const busiest = getBusiestDay()
+    if (!busiest) return []
 
     const suggestions = []
-    const { day, totalTransactions, totalRevenue, products } = details
-    const avgTransaction = totalRevenue / totalTransactions
+    const avgTransaction = getAverageTransaction()
+    const topProducts = getTopProducts()
 
-    // Suggestion based on day pattern
-    if (["Sabtu", "Minggu"].includes(day)) {
+    if (['Sabtu', 'Minggu'].includes(busiest.day)) {
       suggestions.push({
-        type: "schedule",
-        title: "Optimasi Jadwal Weekend",
-        content: `Hari ${day} adalah hari tersibuk Anda. Pastikan stok produk terlaris mencukupi dan pertimbangkan untuk menambah jam operasional di weekend.`
+        title: 'Optimasi Jadwal Weekend',
+        content: `Hari ${busiest.day} adalah hari tersibuk dengan ${busiest.count} transaksi. Pastikan stok produk terlaris mencukupi dan pertimbangkan jam operasional lebih panjang di weekend.`,
+        type: 'schedule'
       })
     } else {
       suggestions.push({
-        type: "schedule",
-        title: "Pola Hari Kerja",
-        content: `Hari ${day} menunjukkan aktivitas tinggi di hari kerja. Manfaatkan momentum ini dengan promosi khusus atau bundle produk.`
+        title: 'Pola Hari Kerja',
+        content: `Hari ${busiest.day} menunjukkan aktivitas tinggi (${busiest.count} transaksi). Manfaatkan dengan promo khusus atau bundle produk di hari tersebut.`,
+        type: 'schedule'
       })
     }
 
-    // Suggestion based on top product
-    if (products.length > 0) {
-      const topProduct = products[0]
+    if (topProducts.length > 0) {
+      const top = topProducts[0]
       suggestions.push({
-        type: "product",
-        title: "Fokus Produk Unggulan",
-        content: `${topProduct.name} adalah produk terlaris di hari ${day} dengan ${topProduct.count} penjualan. Pastikan stok selalu tersedia dan pertimbangkan untuk membuat varian atau bundle.`
+        title: 'Fokus Produk Unggulan',
+        content: `${top.name} adalah produk dengan omzet tertinggi (Rp ${top.revenue.toLocaleString('id-ID')}). Pastikan stok aman dan pertimbangkan varian atau paket bundling.`,
+        type: 'product'
       })
     }
 
-    // Suggestion based on revenue
     if (avgTransaction > 10000) {
       suggestions.push({
-        type: "pricing",
-        title: "Strategi Premium",
-        content: `Rata-rata transaksi Rp ${avgTransaction.toLocaleString("id-ID")} menunjukkan customer willing to pay premium. Pertimbangkan untuk menaikkan margin atau menambah produk premium.`
+        title: 'Strategi Premium',
+        content: `Rata-rata nilai transaksi Rp ${avgTransaction.toLocaleString('id-ID')} cukup tinggi. Pertimbangkan peningkatan margin atau penambahan produk premium.`,
+        type: 'pricing'
       })
     } else {
       suggestions.push({
-        type: "volume",
-        title: "Strategi Volume",
-        content: `Dengan rata-rata transaksi Rp ${avgTransaction.toLocaleString("id-ID")}, fokus pada peningkatan volume penjualan dengan promosi bundle atau diskon quantity.`
+        title: 'Strategi Volume',
+        content: `Rata-rata nilai transaksi Rp ${avgTransaction.toLocaleString('id-ID')} relatif rendah. Fokus ke volume dengan diskon kuantitas atau promo bundling.`,
+        type: 'volume'
       })
     }
 
-    // Suggestion based on product diversity
-    if (products.length >= 3) {
+    if (topProducts.length >= 3) {
       suggestions.push({
-        type: "diversity",
-        title: "Diversifikasi Berhasil",
-        content: `Anda berhasil menjual ${products.length} jenis produk berbeda di hari ${day}. Pertahankan variasi produk dan analisis cross-selling opportunity.`
+        title: 'Variasi Produk Baik',
+        content: `Ada ${topProducts.length} produk yang berkontribusi signifikan pada omzet. Analisis peluang cross-selling di antara produk-produk ini.`,
+        type: 'diversity'
       })
     }
 
     return suggestions
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
+  const getPeriodLabel = () => {
+    switch (filterPeriod) {
+      case 'all': return 'Semua'
+      case 'today': return 'Hari Ini'
+      case 'week': return '7 Hari Terakhir'
+      case 'month': return 'Bulan Ini'
+      case 'year': return 'Tahun Ini'
+      case 'custom': return 'Periode Kustom'
+      default: return 'Semua Data'
+    }
   }
 
-  // Error boundary for the entire component
-  try {
-    return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-secondary mb-2">
-            Data & Statistik
-          </h1>
-          <p className="text-gray-600">
-            Analisis penjualan dan performa bisnis Anda
-          </p>
+  const salesByDate = getSalesByDate()
+  const topProducts = getTopProducts()
+  const suggestions = getAISuggestions()
+  const totalRevenue = getTotalRevenue()
+  const totalProfit = getTotalProfit()
+
+  return (
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-blue-700 mb-2">Data & Statistik</h1>
+        <p className="text-gray-600">Analisis penjualan dan performa bisnis Anda</p>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
         </div>
-
-        {/* Filter Section - Accordion Style */}
-        <div className="card">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <div className="flex items-center space-x-2">
-              <Filter className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-secondary">Filter Periode</h3>
-              <span className="text-sm text-gray-500">
-                ({getPeriodLabel()})
-              </span>
-            </div>
-            {isFilterOpen ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-
-          <motion.div
-            initial={false}
-            animate={{
-              height: isFilterOpen ? "auto" : 0,
-              opacity: isFilterOpen ? 1 : 0
-            }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="pt-4 space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[
-                  { value: "all", label: "Semua" },
-                  { value: "today", label: "Hari Ini" },
-                  { value: "week", label: "7 Hari" },
-                  { value: "month", label: "Bulan Ini" },
-                  { value: "year", label: "Tahun Ini" },
-                  { value: "custom", label: "Kustom" }
-                ].map((period) => (
-                  <button
-                    key={period.value}
-                    onClick={() => setFilterPeriod(period.value)}
-                    className={`p-2 rounded-lg text-sm font-medium transition-colors ${
-                      filterPeriod === period.value
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    {period.label}
-                  </button>
-                ))}
-              </div>
-
-              {filterPeriod === "custom" && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="space-y-3"
-                >
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Dari
-                      </label>
-                      <input
-                        type="date"
-                        value={customDateRange.start}
-                        onChange={(e) =>
-                          handleDateRangeChange("start", e.target.value)
-                        }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
-                          dateRangeError
-                            ? "border-red-300 bg-red-50"
-                            : "border-gray-300"
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Sampai
-                      </label>
-                      <input
-                        type="date"
-                        value={customDateRange.end}
-                        onChange={(e) =>
-                          handleDateRangeChange("end", e.target.value)
-                        }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
-                          dateRangeError
-                            ? "border-red-300 bg-red-50"
-                            : "border-gray-300"
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Error Message */}
-                  {dateRangeError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg"
-                    >
-                      <X className="w-4 h-4 text-red-500 flex-shrink-0" />
-                      <p className="text-sm text-red-700 font-medium">
-                        {dateRangeError}
-                      </p>
-                    </motion.div>
-                  )}
-
-                  {/* Success Message */}
-                  {!dateRangeError &&
-                    customDateRange.start &&
-                    customDateRange.end && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg"
-                      >
-                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                        <p className="text-sm text-green-700 font-medium">
-                          Rentang tanggal valid:{" "}
-                          {new Date(customDateRange.start).toLocaleDateString(
-                            "id-ID"
-                          )}{" "}
-                          -{" "}
-                          {new Date(customDateRange.end).toLocaleDateString(
-                            "id-ID"
-                          )}
-                        </p>
-                      </motion.div>
-                    )}
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
+      ) : !summary ? (
+        <div className="text-center py-8 text-gray-500">
+          <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+          <p>Belum ada data statistik</p>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="card"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Pendapatan</p>
-                <p className="text-lg font-bold text-secondary font-mono">
-                  {`Rp ${getTotalRevenue().toLocaleString("id-ID")}`}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="card"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Profit</p>
-                <p className="text-lg font-bold text-secondary font-mono">
-                  {`Rp ${getTotalProfit().toLocaleString('id-ID')}`}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="card"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Transaksi</p>
-                <p className="text-lg font-bold text-secondary font-mono">
-                  {getTotalTransactions()}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="card"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Produk</p>
-                <p className="text-lg font-bold text-secondary">
-                  {products.length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Busiest Day Insight */}
-        {getBusiestDay() && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowInsightModal(true)}
-            className="w-full text-left card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 hover:shadow-md transition-all duration-200"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-secondary mb-1">
-                  Insight Mingguan
-                </h3>
-                <p className="text-sm text-gray-700">
-                  Transaksi terbanyak terjadi pada hari{" "}
-                  <span className="font-bold text-blue-600 font-mono">
-                    {getBusiestDay().day}
-                  </span>{" "}
-                  dalam minggu ini dengan{" "}
-                  <span className="font-bold text-blue-600 font-mono">
-                    {getBusiestDay().count} transaksi
-                  </span>
-                </p>
-                <p className="text-xs text-blue-500 mt-1">
-                  {" "}
-                  Tap untuk detail & saran AI
-                </p>
-              </div>
-            </div>
-          </motion.button>
-        )}
-
-        {/* Sales Chart */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-secondary">Grafik Penjualan</h3>
-            </div>
+      ) : (
+        <>
+      {/* Filter Periode */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <button
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
+          className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors"
+        >
+          <div className="flex items-center space-x-2">
+            <Filter className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-800">Filter Periode</h3>
+            <span className="text-sm text-gray-500">({getPeriodLabel()})</span>
           </div>
+          {isFilterOpen ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
+        </button>
 
-          <div className="space-y-3">
-            {getSalesByDate().map(([date, revenue], index) => {
-              const maxRevenue = Math.max(
-                ...getSalesByDate().map(([, rev]) => rev)
-              )
-              const percentage =
-                maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0
+        <motion.div
+          initial={false}
+          animate={{
+            height: isFilterOpen ? 'auto' : 0,
+            opacity: isFilterOpen ? 1 : 0
+          }}
+          transition={{ duration: 0.2 }}
+          className="overflow-hidden"
+        >
+          <div className="pt-4 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { value: 'all', label: 'Semua' },
+                { value: 'today', label: 'Hari Ini' },
+                { value: 'week', label: '7 Hari' },
+                { value: 'month', label: 'Bulan Ini' },
+                { value: 'year', label: 'Tahun Ini' },
+                { value: 'custom', label: 'Kustom' }
+              ].map(period => (
+                <button
+                  key={period.value}
+                  onClick={() => setFilterPeriod(period.value)}
+                  className={`p-2 rounded-lg text-sm font-medium transition-colors ${
+                    filterPeriod === period.value
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {period.label}
+                </button>
+              ))}
+            </div>
 
-              return (
-                <div key={date} className="flex items-center space-x-3">
-                  <div className="w-16 text-xs text-gray-600">{date}</div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-4 relative">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="bg-primary h-4 rounded-full"
+            {filterPeriod === 'custom' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dari</label>
+                    <input
+                      type="date"
+                      value={customDateRange.start}
+                      onChange={e => handleDateRangeChange('start', e.target.value)}
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent ${
+                        dateRangeError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      }`}
                     />
                   </div>
-                  <div className="w-20 text-xs text-gray-800 text-right font-mono">
-                    Rp {revenue.toLocaleString("id-ID")}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sampai</label>
+                    <input
+                      type="date"
+                      value={customDateRange.end}
+                      onChange={e => handleDateRangeChange('end', e.target.value)}
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent ${
+                        dateRangeError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      }`}
+                    />
                   </div>
                 </div>
-              )
-            })}
+
+                {dateRangeError && (
+                  <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <X className="w-4 h-4 text-red-500" />
+                    <p className="text-sm text-red-700">{dateRangeError}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-white rounded-lg shadow-sm border p-4"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Pendapatan</p>
+              <p className="text-lg font-bold text-gray-800 font-mono">Rp {totalRevenue.toLocaleString('id-ID')}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-lg shadow-sm border p-4"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Profit (perkiraan)</p>
+              <p className="text-lg font-bold text-gray-800 font-mono">Rp {totalProfit.toLocaleString('id-ID')}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white rounded-lg shadow-sm border p-4"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Transaksi</p>
+              <p className="text-lg font-bold text-gray-800 font-mono">{getTotalTransactions()}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-lg shadow-sm border p-4"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Package className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Produk</p>
+              <p className="text-lg font-bold text-gray-800">{products.length}</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Grafik Penjualan 7 Hari Terakhir */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-800">Grafik Penjualan (7 Hari Terakhir)</h3>
           </div>
         </div>
-
-        {/* Top Products Enhanced */}
-        <div className="card">
-          <div className="flex items-center space-x-2 mb-4">
-            <Award className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-secondary">Produk Terlaris</h3>
+        {salesByDate.length === 0 ? (
+          <p className="text-sm text-gray-500">Belum ada data penjualan untuk periode ini.</p>
+        ) : (
+          <div className="space-y-2">
+            {(() => {
+              const maxRevenue = Math.max(...salesByDate.map(([, rev]) => rev)) || 1
+              return salesByDate.map(([date, revenue]) => (
+                <div key={date} className="flex items-center space-x-3">
+                  <span className="w-24 text-xs text-gray-600">{date}</span>
+                  <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-3 rounded-full bg-blue-500"
+                      style={{ width: `${(revenue / maxRevenue) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-28 text-xs font-mono text-gray-700 text-right">
+                    Rp {Math.round(revenue).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              ))
+            })()}
           </div>
-
-          {getTopProducts().length > 0 ? (
-            <div className="space-y-6">
-              {/* Top Product Highlight */}
-              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <Star className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-secondary text-lg">
-                      {getTopProducts()[0]?.name || "N/A"}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Produk Terlaris #{getPeriodLabel()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary font-mono">
-                      {getTopProducts()[0]?.count || 0}
-                    </p>
-                    <p className="text-xs text-gray-600">Unit Terjual</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600 font-mono">
-                      Rp{" "}
-                      {(getTopProducts()[0]?.revenue || 0).toLocaleString(
-                        "id-ID"
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-600">Total Revenue</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600 font-mono">
-                      {getTopProducts()[0]?.transactions || 0}
-                    </p>
-                    <p className="text-xs text-gray-600">Transaksi</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Revenue Distribution Pie Chart */}
-              {getRevenueDistribution().length > 0 && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <PieChart className="w-4 h-4 text-primary" />
-                    <h4 className="font-semibold text-secondary">
-                      Distribusi Revenue
-                    </h4>
-                  </div>
-                  <SimplePieChart data={getRevenueDistribution()} size={140} />
-                  <div className="mt-3 text-center">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-semibold text-primary">
-                        {getTopProducts()[0]?.name || "Produk Terlaris"}
-                      </span>{" "}
-                      berkontribusi{" "}
-                      <span className="font-bold text-primary">
-                        {getRevenueDistribution()[0]?.percentage?.toFixed(1) ||
-                          "0"}
-                        %
-                      </span>{" "}
-                      dari total revenue
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Other Top Products */}
-              {getTopProducts().length > 1 && (
-                <div>
-                  <h4 className="font-semibold text-secondary mb-3">
-                    Produk Terlaris Lainnya
-                  </h4>
-                  <div className="space-y-2">
-                    {getTopProducts()
-                      .slice(1)
-                      .map((product, index) => (
-                        <div
-                          key={product.name}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-7 h-7 bg-gray-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                              {index + 2}
-                            </div>
-                            <div>
-                              <p className="font-medium text-secondary">
-                                {product.name}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {product.count} unit • {product.transactions}{" "}
-                                transaksi
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-success font-mono">
-                              Rp {product.revenue.toLocaleString("id-ID")}
-                            </p>
-                            <p className="text-xs text-gray-500 font-mono">
-                              {(
-                                (product.revenue / getTotalRevenue()) *
-                                100
-                              ).toFixed(1)}
-                              % dari total
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Package className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p>Belum ada data penjualan untuk periode ini</p>
-            </div>
-          )}
-        </div>
-
-        {/* Insight Detail Modal */}
-        {showInsightModal && getBusiestDayDetails() && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => setShowInsightModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-secondary">
-                      Detail Hari {getBusiestDayDetails().day}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      Analisis penjualan & saran AI
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowInsightModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              {/* Modal Content */}
-              <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-                <div className="p-6 space-y-6">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <DollarSign className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">
-                          Total Pendapatan
-                        </span>
-                      </div>
-                      <p className="text-lg font-bold text-green-700 font-mono">
-                        Rp{" "}
-                        {getBusiestDayDetails().totalRevenue.toLocaleString(
-                          "id-ID"
-                        )}
-                      </p>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <ShoppingCart className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-800">
-                          Total Transaksi
-                        </span>
-                      </div>
-                      <p className="text-lg font-bold text-blue-700 font-mono">
-                        {getBusiestDayDetails().totalTransactions}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Products Sold */}
-                  <div>
-                    <h3 className="font-semibold text-secondary mb-3 flex items-center">
-                      <Package className="w-4 h-4 mr-2" />
-                      Produk Terjual
-                    </h3>
-                    <div className="space-y-2">
-                      {getBusiestDayDetails().products.map((product, index) => (
-                        <div
-                          key={product.name}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-secondary">
-                                {product.name}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {product.count} terjual
-                              </p>
-                            </div>
-                          </div>
-                          <p className="font-bold text-success font-mono">
-                            Rp {product.revenue.toLocaleString("id-ID")}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* AI Suggestions */}
-                  <div>
-                    <h3 className="font-semibold text-secondary mb-3 flex items-center">
-                      <Lightbulb className="w-4 h-4 mr-2 text-yellow-500" />
-                      Saran AI untuk Bisnis Anda
-                    </h3>
-                    <div className="space-y-3">
-                      {getAISuggestions().map((suggestion, index) => {
-                        const getIcon = (type) => {
-                          switch (type) {
-                            case "schedule":
-                              return <Clock className="w-4 h-4" />
-                            case "product":
-                              return <Package className="w-4 h-4" />
-                            case "pricing":
-                              return <TrendingUp className="w-4 h-4" />
-                            case "volume":
-                              return <TrendingDown className="w-4 h-4" />
-                            case "diversity":
-                              return <Target className="w-4 h-4" />
-                            default:
-                              return <Lightbulb className="w-4 h-4" />
-                          }
-                        }
-
-                        const getColor = (type) => {
-                          switch (type) {
-                            case "schedule":
-                              return "text-blue-600 bg-blue-50 border-blue-200"
-                            case "product":
-                              return "text-green-600 bg-green-50 border-green-200"
-                            case "pricing":
-                              return "text-purple-600 bg-purple-50 border-purple-200"
-                            case "volume":
-                              return "text-orange-600 bg-orange-50 border-orange-200"
-                            case "diversity":
-                              return "text-pink-600 bg-pink-50 border-pink-200"
-                            default:
-                              return "text-gray-600 bg-gray-50 border-gray-200"
-                          }
-                        }
-
-                        return (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className={`p-4 rounded-lg border ${getColor(suggestion.type)}`}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div
-                                className={`p-2 rounded-lg ${getColor(suggestion.type)}`}
-                              >
-                                {getIcon(suggestion.type)}
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-secondary mb-1">
-                                  {suggestion.title}
-                                </h4>
-                                <p className="text-sm text-gray-700">
-                                  {suggestion.content}
-                                </p>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
         )}
       </div>
-    )
-  } catch (error) {
-    console.error("Error in Statistics component:", error)
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
-          <h2 className="text-xl font-bold text-red-600 mb-2">
-            Terjadi Kesalahan
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Tidak dapat memuat data statistik
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
-          >
-            Muat Ulang
-          </button>
+
+      {/* Top Produk */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <ShoppingCart className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-semibold text-gray-800">Produk Terlaris</h3>
+          </div>
         </div>
+        {topProducts.length === 0 ? (
+          <p className="text-sm text-gray-500">Belum ada produk terjual pada periode ini.</p>
+        ) : (
+          <div className="space-y-3">
+            {topProducts.map((p, idx) => (
+              <div
+                key={p.name}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                    {idx === 0 ? (
+                      <Award className="w-4 h-4 text-yellow-500" />
+                    ) : (
+                      <Star className="w-4 h-4 text-blue-500" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">{p.name}</p>
+                    <p className="text-xs text-gray-500">{p.qty} item terjual</p>
+                  </div>
+                </div>
+                <div className="text-right text-sm">
+                  <p className="font-mono font-semibold text-gray-800">Rp {p.revenue.toLocaleString('id-ID')}</p>
+                  <p className="text-xs text-gray-500">Omzet</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    )
-  }
+
+      {/* Insight / Saran */}
+      {suggestions.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="flex items-center space-x-2 mb-3">
+            <Lightbulb className="w-5 h-5 text-amber-500" />
+            <h3 className="font-semibold text-gray-800">Insight & Rekomendasi</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {suggestions.map((s, idx) => (
+              <div
+                key={`${s.title}-${idx}`}
+                className="border border-amber-100 rounded-lg p-3 bg-amber-50/50"
+              >
+                <p className="text-sm font-semibold text-gray-800 mb-1">{s.title}</p>
+                <p className="text-xs text-gray-700 leading-snug">{s.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+        </>
+      )}
+    </div>
+  )
 }
-
-
 

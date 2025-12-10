@@ -1,57 +1,94 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider
-} from 'firebase/auth'
-import { auth } from '../config/firebase'
+import { API_BASE_URL } from '../apiClient'
 
 const AuthContext = createContext()
 
-export function useAuth () {
+export function useAuth() {
   return useContext(AuthContext)
 }
 
-export function AuthProvider ({ children }) {
+export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  function signup (email, password) {
-    return createUserWithEmailAndPassword(auth, email, password)
-  }
+  async function signup(email, password) {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    })
 
-  function login (email, password) {
-    return signInWithEmailAndPassword(auth, email, password)
-  }
-
-  function logout () {
-    return signOut(auth)
-  }
-
-  async function changePassword (currentPassword, newPassword) {
-    if (!currentUser) {
-      throw new Error('No user logged in')
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Gagal mendaftar')
     }
 
-    // Reauthenticate user first
-    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword)
-    await reauthenticateWithCredential(currentUser, credential)
-    
-    // Update password
-    return updatePassword(currentUser, newPassword)
+    const data = await response.json()
+    localStorage.setItem('authToken', data.token)
+    setCurrentUser(data.user)
+    return data.user
+  }
+
+  async function login(email, password) {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Email atau password salah')
+    }
+
+    const data = await response.json()
+    localStorage.setItem('authToken', data.token)
+    setCurrentUser(data.user)
+    return data.user
+  }
+
+  function logout() {
+    localStorage.removeItem('authToken')
+    setCurrentUser(null)
+  }
+
+  function updatePassword(password) {
+    // Belum diimplementasi di backend
+    return Promise.reject(new Error('Fitur ganti password belum tersedia'))
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user)
-      setLoading(false)
-    })
+    async function checkAuth() {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setLoading(false)
+        return
+      }
 
-    return unsubscribe
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          localStorage.removeItem('authToken')
+          setCurrentUser(null)
+        } else {
+          const data = await response.json()
+          setCurrentUser(data.user)
+        }
+      } catch (error) {
+        console.error('Gagal mengecek status auth:', error)
+        localStorage.removeItem('authToken')
+        setCurrentUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
   }, [])
 
   const value = {
@@ -59,7 +96,8 @@ export function AuthProvider ({ children }) {
     signup,
     login,
     logout,
-    changePassword
+    updatePassword,
+    loading
   }
 
   return (

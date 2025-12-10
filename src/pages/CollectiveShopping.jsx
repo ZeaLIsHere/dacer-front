@@ -1,152 +1,78 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { useAuth } from '../contexts/AuthContext'
-import { db } from '../config/firebase'
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDocs } from 'firebase/firestore'
 import { AlertCircle } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
+import { API_BASE_URL } from '../apiClient'
 
 export default function CollectiveShopping () {
   const { currentUser } = useAuth()
-  const [myProducts, setMyProducts] = useState([])
+  const { currentStore } = useStore()
+  const { showSuccess, showError } = useToast()
+
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!currentUser) return
-
-    // Get user's products to find low stock items
-    const productsQuery = query(
-      collection(db, 'products'),
-      where('userId', '==', currentUser.uid)
-    )
-
-    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+    const fetchProducts = async () => {
+      if (!currentUser || !currentStore) {
+        setLoading(false)
+        return
+      }
       try {
-        const productsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-        
-        // Filter low stock products (stok <= 5)
-        const lowStockProducts = productsData.filter(product => (product.stok || 0) <= 5)
-        setMyProducts(lowStockProducts)
-        setLoading(false)
-      } catch (error) {
-        console.error('Error processing products data:', error)
-        setMyProducts([])
+        const res = await fetch(`${API_BASE_URL}/api/products?userId=${currentUser.id}&storeId=${currentStore.id}`)
+        const data = await res.json()
+        setProducts(data.data?.products || [])
+      } catch (err) {
+        console.error('Error fetching products for collective shopping:', err)
+        showError('Gagal memuat data produk untuk belanja kolektif')
+      } finally {
         setLoading(false)
       }
-    }, (error) => {
-      console.error('Error fetching products for collective shopping:', error)
-      setMyProducts([])
-      setLoading(false)
-      
-      if (error.code === 'permission-denied') {
-        console.log('Permission denied for products collection in collective shopping')
-      }
-    })
+    }
 
-    return unsubscribe
-  }, [currentUser])
-  const { showSuccess, showError } = useToast()
+    fetchProducts()
+  }, [currentUser, currentStore, showError])
 
-  // Integrated collective shopping function
-  const _handleCollectiveShoppingJoin = async (offer) => {
-    try {
-      const savings = offer.originalPrice - offer.discountedPrice
-      const orderQuantity = Math.max(offer.minOrder, Math.ceil(offer.currentStock / 2)) 
-      
-      const orderData = {
-        productId: offer.productId,
-        productName: offer.productName,
-        quantity: orderQuantity,
-        unitPrice: offer.discountedPrice,
-        totalPrice: offer.discountedPrice * orderQuantity,
-        savings: savings * orderQuantity,
-        category: offer.category,
-        unit: offer.unit,
-        merchantsJoined: offer.interestedMerchants + 1,
-        orderType: 'collective_purchase'
-      }
+  const lowStockProducts = useMemo(
+    () => (products || []).filter((p) => (p.stok || 0) <= 5),
+    [products]
+  )
 
-      await processInventoryRestock({
-        productName: offer.productName,
-        quantity: orderQuantity,
-        bulkPrice: offer.discountedPrice,
-        category: offer.category
-      })
+  const buildOfferFromProduct = (product) => {
+    const originalPrice = product.harga || 0
+    const discountPercentage = 20
+    const discountedPrice = Math.round(originalPrice * (1 - discountPercentage / 100))
+    const batchSize = product.batch_size && product.batch_size > 1 ? product.batch_size : 1
+    const minOrder = batchSize > 1 ? batchSize * 5 : 10
+    const quantityToBuy = minOrder
+    const savingsPerUnit = originalPrice - discountedPrice
+    const totalSavings = savingsPerUnit * quantityToBuy
+    const expectedProfit = (originalPrice - discountedPrice) * quantityToBuy
 
-      await addDoc(collection(db, 'transactions'), {
-        userId: currentUser.uid,
-        type: 'collective_purchase',
-        items: [{
-          nama: offer.productName,
-          quantity: orderQuantity,
-          harga: offer.discountedPrice,
-          totalPrice: orderData.totalPrice
-        }],
-        totalAmount: orderData.totalPrice,
-        paymentMethod: 'collective',
-        supplier: 'Collective Shopping Network',
-        timestamp: serverTimestamp(),
-        collectiveData: {
-          merchantsJoined: orderData.merchantsJoined,
-          originalPrice: offer.originalPrice,
-          discountPercentage: offer.discountPercentage,
-          totalSavings: orderData.savings
-        }
-      })
-
-      showSuccess(`Belanja Kolektif Berhasil! ${offer.productName} • Qty ${orderQuantity} • Hemat Rp ${orderData.savings.toLocaleString('id-ID')}`)
-    } catch (error) {
-      console.error('Error processing collective shopping:', error)
-      showError('Gagal memproses belanja kolektif. Silakan coba lagi.')
+    return {
+      productId: product.id,
+      productName: product.nama,
+      originalPrice,
+      discountedPrice,
+      discountPercentage,
+      minOrder,
+      quantityToBuy,
+      totalSavings,
+      expectedProfit,
+      currentStock: product.stok || 0,
+      category: product.kategori || 'Umum',
+      unit: product.satuan || 'unit',
+      interestedMerchants: 2
     }
   }
 
-  const processInventoryRestock = async (item) => {
-    try {
-      const productsQuery = query(
-        collection(db, 'products'),
-        where('userId', '==', currentUser.uid),
-        where('nama', '==', item.productName)
-      )
-
-      const existingProducts = await getDocs(productsQuery)
-
-      if (!existingProducts.empty) {
-        const existingProduct = existingProducts.docs[0]
-        const currentStock = existingProduct.data().stok || 0
-        const newStock = currentStock + item.quantity
-
-        await updateDoc(doc(db, 'products', existingProduct.id), {
-          stok: newStock,
-          lastRestocked: serverTimestamp(),
-          lastRestockQuantity: item.quantity,
-          lastRestockPrice: item.bulkPrice,
-          lastRestockSource: 'collective_purchase'
-        })
-      } else {
-        const newProductData = {
-          userId: currentUser.uid,
-          nama: item.productName,
-          kategori: item.category || 'Lainnya',
-          harga: Math.round(item.bulkPrice * 1.3),
-          stok: item.quantity,
-          createdAt: serverTimestamp(),
-          lastRestocked: serverTimestamp(),
-          lastRestockQuantity: item.quantity,
-          lastRestockPrice: item.bulkPrice,
-          lastRestockSource: 'collective_purchase',
-          addedViaCollective: true
-        }
-
-        await addDoc(collection(db, 'products'), newProductData)
-      }
-    } catch (error) {
-      console.error(`Error processing restock for ${item.productName}:`, error)
-      throw error
-    }
+  const handleCollectiveJoin = (offer) => {
+    if (!offer) return
+    showSuccess(
+      `Simulasi Belanja Kolektif: ${offer.productName} • Qty ${offer.quantityToBuy} • Potensi hemat Rp ${offer.totalSavings.toLocaleString('id-ID')}`
+    )
   }
 
   if (loading) {
@@ -169,8 +95,8 @@ export default function CollectiveShopping () {
         </div>
       </div>
 
-      {/* My Low Stock Products */}
-      {myProducts.length > 0 && (
+      {/* My Low Stock Products / Produk Perlu Restok */}
+      {lowStockProducts.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,13 +108,16 @@ export default function CollectiveShopping () {
             </div>
             <div>
               <h3 className="font-bold text-blue-800">Produk Perlu Restok</h3>
-              <p className="text-sm text-blue-600">Stok ≤ 5 unit - Trigger otomatis untuk penawaran kolektif</p>
+              <p className="text-sm text-blue-600">Stok  5 unit - Trigger otomatis untuk penawaran kolektif</p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
-            {myProducts.map((product, index) => (
-              <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+            {lowStockProducts.map((product) => (
+              <span
+                key={product.id}
+                className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full"
+              >
                 {product.nama} ({product.stok} tersisa)
               </span>
             ))}
@@ -197,30 +126,10 @@ export default function CollectiveShopping () {
       )}
 
       {/* Collective offers */}
-      {myProducts.length > 0 && (
+      {lowStockProducts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {myProducts.map((product) => {
-            const originalPrice = product.harga || 0
-            const discountPercentage = 20
-            const discountedPrice = Math.round(originalPrice * (1 - discountPercentage / 100))
-            const minOrder = product.batchSize && product.batchSize > 1 ? product.batchSize * 5 : 10
-            const quantityToBuy = minOrder
-            const savingsPerUnit = originalPrice - discountedPrice
-            const totalSavings = savingsPerUnit * quantityToBuy
-            const expectedProfit = (product.harga - discountedPrice) * quantityToBuy
-
-            const offer = {
-              productId: product.id,
-              productName: product.nama,
-              originalPrice,
-              discountedPrice,
-              discountPercentage,
-              minOrder,
-              currentStock: product.stok || 0,
-              category: product.kategori || 'Umum',
-              unit: product.satuan || 'unit',
-              interestedMerchants: 2
-            }
+          {lowStockProducts.map((product) => {
+            const offer = buildOfferFromProduct(product)
 
             return (
               <motion.div
@@ -236,47 +145,66 @@ export default function CollectiveShopping () {
                       Stok tersisa: <span className="font-bold">{product.stok}</span>
                     </p>
                     <p className="text-sm text-gray-600">
-                      Harga jual saat ini: <span className="font-semibold">Rp {originalPrice.toLocaleString('id-ID')}</span>
+                      Harga jual saat ini:{' '}
+                      <span className="font-semibold">
+                        Rp {offer.originalPrice.toLocaleString('id-ID')}
+                      </span>
                     </p>
                   </div>
 
                   <div className="text-right">
                     <p className="text-xs text-gray-500">Diskon kolektif</p>
-                    <p className="text-lg font-bold text-green-600">{discountPercentage}%</p>
+                    <p className="text-lg font-bold text-green-600">{offer.discountPercentage}%</p>
                   </div>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-3 items-center">
                   <div>
                     <p className="text-xs text-gray-500">Harga grosir / unit</p>
-                    <p className="font-semibold">Rp {discountedPrice.toLocaleString('id-ID')}</p>
+                    <p className="font-semibold">
+                      Rp {offer.discountedPrice.toLocaleString('id-ID')}
+                    </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Minimal order: <span className="font-medium">{minOrder} {offer.unit}</span>
+                      Minimal order:{' '}
+                      <span className="font-medium">
+                        {offer.minOrder} {offer.unit}
+                      </span>
                     </p>
                   </div>
 
                   <div>
                     <p className="text-xs text-gray-500">Estimasi keuntungan jika ikut</p>
                     <p className="font-semibold text-blue-700">
-                      Rp {expectedProfit.toLocaleString('id-ID')}
+                      Rp {offer.expectedProfit.toLocaleString('id-ID')}
                     </p>
                     <p className="text-xs text-gray-400">
-                      (Hemat Rp {totalSavings.toLocaleString('id-ID')} untuk {quantityToBuy} unit)
+                      (Hemat Rp {offer.totalSavings.toLocaleString('id-ID')} untuk{' '}
+                      {offer.quantityToBuy} unit)
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <button
-                    onClick={() => _handleCollectiveShoppingJoin(offer)}
+                    type="button"
+                    onClick={() => handleCollectiveJoin(offer)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition-all"
                   >
-                    Ikut Belanja
+                    Ikut Belanja (Simulasi)
                   </button>
+                  <p className="mt-1 text-[11px] text-gray-500 text-center">
+                    Versi ini mensimulasikan belanja kolektif tanpa mengubah data stok di backend.
+                  </p>
                 </div>
               </motion.div>
             )
           })}
+        </div>
+      )}
+
+      {lowStockProducts.length === 0 && (
+        <div className="text-center py-12 text-gray-500 text-sm">
+          Tidak ada produk dengan stok  5. Semua stok dalam kondisi aman.
         </div>
       )}
     </div>

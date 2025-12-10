@@ -1,253 +1,80 @@
-import React, { useState, useEffect, useMemo } from "react"
-import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom"
-import { useAuth } from "../contexts/AuthContext"
-import { useNotification } from "../contexts/NotificationContext"
-import { db } from "../config/firebase"
-import { collection, query, where, onSnapshot } from "firebase/firestore"
-import {
-  Bell,
-  AlertTriangle,
-  TrendingUp,
-  Package,
-  Star,
-  Calendar,
-  ChevronRight
-} from "lucide-react"
-import PromotionModal from "../components/PromotionModal"
+import React, { useEffect, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Bell, AlertTriangle, TrendingUp, Package, Star, Calendar, ChevronRight } from 'lucide-react'
+import { useNotification } from '../contexts/NotificationContext'
 
 export default function Notifications () {
-  const { currentUser } = useAuth()
-  const { markAllAsRead, _notifyStockOut, _notifyLowStock } = useNotification()
-  const navigate = useNavigate()
-  const [products, setProducts] = useState([])
-  const [sales, setSales] = useState([])
+  const { notifications, markAllAsRead } = useNotification()
   const [loading, setLoading] = useState(true)
-  const [showPromotionModal, setShowPromotionModal] = useState(false)
-  const [highStockProductsState, setHighStockProductsState] = useState([])
-  const [selectedProductId, setSelectedProductId] = useState(null)
-
-  // Helper untuk menentukan status stok berdasarkan stok & batchSize
-  const getStockStatus = (product) => {
-    const stok = Number(product.stok) || 0
-    const batchSize = Number(product.batchSize) || 1
-
-    // Produk bundling tidak ikut perhitungan stok khusus
-    if (product.isBundle) return "stok_normal"
-
-    if (stok === 0) return "stok_habis"
-    if (stok >= 5 * batchSize) return "stok_berlebih"
-    if (stok <= 0.5 * batchSize) return "stok_menipis"
-    return "stok_normal"
-  }
 
   useEffect(() => {
     markAllAsRead()
+    const timer = setTimeout(() => setLoading(false), 300)
+    return () => clearTimeout(timer)
   }, [markAllAsRead])
 
-  useEffect(() => {
-    if (!currentUser) return
+  const stats = useMemo(() => {
+    const isError = (n) => n.color === 'red' || n.type === 'stock-out' || n.type === 'error'
+    const isWarning = (n) => n.color === 'yellow' || n.type === 'stock-low' || n.type === 'warning'
+    const isSuccess = (n) => n.color === 'green' || n.type === 'transaction-success' || n.type === 'success' || n.type === 'debt-paid'
 
-    const productsQuery = query(
-      collection(db, "products"),
-      where("userId", "==", currentUser.uid)
-    )
+    const error = notifications.filter(isError).length
+    const warning = notifications.filter(isWarning).length
+    const success = notifications.filter(isSuccess).length
+    const total = notifications.length
 
-    const unsubscribeProducts = onSnapshot(productsQuery, (snapshot) => {
-      const productsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-      setProducts(productsData)
-      setLoading(false)
-    })
+    return { error, warning, success, total }
+  }, [notifications])
 
-    const salesQuery = query(
-      collection(db, "sales"),
-      where("userId", "==", currentUser.uid)
-    )
-
-    const unsubscribeSales = onSnapshot(salesQuery, (snapshot) => {
-      const salesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-      setSales(salesData)
-    })
-
-    return () => {
-      unsubscribeProducts()
-      unsubscribeSales()
-    }
-  }, [currentUser])
-
-  const notifications = useMemo(() => {
-    const notifs = []
-
-    const outOfStock = products.filter(
-      (p) => getStockStatus(p) === "stok_habis"
-    )
-    const lowStock = products.filter(
-      (p) => getStockStatus(p) === "stok_menipis"
-    )
-
-    outOfStock.forEach((product) => {
-      notifs.push({
-        id: `out-${product.id}`,
-        type: "error",
-        icon: AlertTriangle,
-        title: "Stok Habis",
-        message: `${product.nama} sudah habis`,
-        time: "Sekarang",
-        priority: 3,
-        actionable: true,
-        actionText: "Ke Halaman Stok",
-        action: () => navigate("/stock")
-      })
-    })
-
-    lowStock.forEach((product) => {
-      notifs.push({
-        id: `low-${product.id}`,
-        type: "warning",
-        icon: Package,
-        title: "Stok Menipis",
-        message: `${product.nama} tinggal ${product.stok} ${product.satuan}`,
-        time: "Sekarang",
-        priority: 2,
-        actionable: false
-      })
-    })
-
-    if (sales.length > 0) {
-      const weekAgo = new Date()
-      weekAgo.setDate(weekAgo.getDate() - 7)
-
-      const recentSales = sales.filter((sale) => {
-        const saleDate = sale.timestamp?.toDate()
-        return saleDate && saleDate >= weekAgo
-      })
-
-      if (recentSales.length > 0) {
-        const productSales = {}
-        recentSales.forEach((sale) => {
-          productSales[sale.productId] =
-            (productSales[sale.productId] || 0) + 1
-        })
-
-        const bestSellingProductId = Object.keys(productSales).reduce((a, b) =>
-          productSales[a] > productSales[b] ? a : b
-        )
-
-        const bestSellingProduct = products.find(
-          (p) => p.id === bestSellingProductId
-        )
-        const bestSellingCount = productSales[bestSellingProductId]
-
-        if (bestSellingProduct && bestSellingCount > 3) {
-          notifs.push({
-            id: "best-selling",
-            type: "success",
-            icon: Star,
-            title: "Produk Terlaris",
-            message: `${bestSellingProduct.nama} terjual ${bestSellingCount}x minggu ini`,
-            time: "1 hari lalu",
-            priority: 1
-          })
-        }
-
-        const today = new Date()
-        const todaySales = sales.filter((sale) => {
-          const saleDate = sale.timestamp?.toDate()
-          return saleDate && saleDate.toDateString() === today.toDateString()
-        })
-
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        const yesterdaySales = sales.filter((sale) => {
-          const saleDate = sale.timestamp?.toDate()
-          return (
-            saleDate && saleDate.toDateString() === yesterday.toDateString()
-          )
-        })
-
-        if (
-          todaySales.length > yesterdaySales.length &&
-          todaySales.length > 5
-        ) {
-          notifs.push({
-            id: "sales-trend",
-            type: "info",
-            icon: TrendingUp,
-            title: "Penjualan Meningkat",
-            message: `Hari ini ${todaySales.length} penjualan, kemarin ${yesterdaySales.length}`,
-            time: "2 jam lalu",
-            priority: 1
-          })
-        }
-      }
-    }
-
-    if (products.length > 0) {
-      const highStockProducts = products.filter(
-        (p) => getStockStatus(p) === "stok_berlebih"
-      )
-      if (highStockProducts.length > 0) {
-        notifs.push({
-          id: "high-stock",
-          type: "info",
-          icon: Package,
-          title: "Saran Bisnis",
-          message: `${highStockProducts.length} produk memiliki stok berlebih. Pertimbangkan promosi.`,
-          time: "1 hari lalu",
-          priority: 1,
-          actionable: true,
-          actionText: "Buat Promosi",
-          action: () => {
-            setHighStockProductsState(highStockProducts)
-            if (highStockProducts.length > 0) {
-              setSelectedProductId(highStockProducts[0].id)
-            }
-            setShowPromotionModal(true)
-          }
-        })
-      }
-    }
-
-    return notifs.sort((a, b) => {
-      if (a.priority !== b.priority) return b.priority - a.priority
-      const typeOrder = { error: 3, warning: 2, success: 1, info: 0 }
-      return typeOrder[b.type] - typeOrder[a.type]
-    })
-  }, [products, sales, navigate])
+  const getVisualType = (notification) => {
+    if (notification.color === 'red' || notification.type === 'stock-out' || notification.type === 'error') return 'error'
+    if (notification.color === 'yellow' || notification.type === 'stock-low' || notification.type === 'warning') return 'warning'
+    if (notification.color === 'green' || notification.type === 'transaction-success' || notification.type === 'success' || notification.type === 'debt-paid') return 'success'
+    return 'info'
+  }
 
   const getNotificationStyle = (type) => {
     switch (type) {
-      case "error":
-        return "border-red-200 bg-red-50"
-      case "warning":
-        return "border-yellow-200 bg-yellow-50"
-      case "success":
-        return "border-green-200 bg-green-50"
-      case "info":
-        return "border-blue-200 bg-blue-50"
+      case 'error':
+        return 'border-red-200 bg-red-50'
+      case 'warning':
+        return 'border-yellow-200 bg-yellow-50'
+      case 'success':
+        return 'border-green-200 bg-green-50'
+      case 'info':
+        return 'border-blue-200 bg-blue-50'
       default:
-        return "border-gray-200 bg-gray-50"
+        return 'border-gray-200 bg-gray-50'
+    }
+  }
+
+  const getIconComponent = (type) => {
+    switch (type) {
+      case 'error':
+        return AlertTriangle
+      case 'warning':
+        return Package
+      case 'success':
+        return Star
+      case 'info':
+        return TrendingUp
+      default:
+        return Bell
     }
   }
 
   const getIconColor = (type) => {
     switch (type) {
-      case "error":
-        return "text-red-600"
-      case "warning":
-        return "text-yellow-600"
-      case "success":
-        return "text-green-600"
-      case "info":
-        return "text-blue-600"
+      case 'error':
+        return 'text-red-600'
+      case 'warning':
+        return 'text-yellow-600'
+      case 'success':
+        return 'text-green-600'
+      case 'info':
+        return 'text-blue-600'
       default:
-        return "text-gray-600"
+        return 'text-gray-600'
     }
   }
 
@@ -271,10 +98,8 @@ export default function Notifications () {
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
             <AlertTriangle className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-sm text-blue-600">Stok Habis</p>
-          <p className="text-lg font-bold text-blue-700">
-            {notifications.filter(n => n.type === 'error').length}
-          </p>
+          <p className="text-sm text-blue-600">Stok Habis / Error</p>
+          <p className="text-lg font-bold text-blue-700">{stats.error}</p>
         </div>
 
         <div className="card text-center">
@@ -282,9 +107,7 @@ export default function Notifications () {
             <Package className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-blue-600">Peringatan</p>
-          <p className="text-lg font-bold text-blue-700">
-            {notifications.filter(n => n.type === 'warning').length}
-          </p>
+          <p className="text-lg font-bold text-blue-700">{stats.warning}</p>
         </div>
 
         <div className="card text-center">
@@ -292,9 +115,7 @@ export default function Notifications () {
             <TrendingUp className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-blue-600">Kabar Baik</p>
-          <p className="text-lg font-bold text-green-600">
-            {notifications.filter((n) => n.type === "success").length}
-          </p>
+          <p className="text-lg font-bold text-green-600">{stats.success}</p>
         </div>
 
         <div className="card text-center">
@@ -302,24 +123,26 @@ export default function Notifications () {
             <Bell className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-sm text-blue-600">Total</p>
-          <p className="text-lg font-bold text-blue-600">
-            {notifications.length}
-          </p>
+          <p className="text-lg font-bold text-blue-600">{stats.total}</p>
         </div>
       </div>
 
       {notifications.length === 0 ? (
         <div className="text-center py-12">
           <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-500 mb-2">
-            Tidak ada notifikasi
-          </h3>
+          <h3 className="text-lg font-medium text-gray-500 mb-2">Tidak ada notifikasi</h3>
           <p className="text-gray-400">Semua dalam kondisi baik!</p>
         </div>
       ) : (
         <div className="space-y-3">
           {notifications.map((notification, index) => {
-            const Icon = notification.icon
+            const type = getVisualType(notification)
+            const Icon = getIconComponent(type)
+            const timeLabel = notification.timestamp
+              ? new Date(notification.timestamp).toLocaleString('id-ID')
+              : 'Baru saja'
+
+            const isClickable = !!notification.action
 
             return (
               <motion.div
@@ -327,42 +150,52 @@ export default function Notifications () {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className={`border rounded-lg p-4 ${getNotificationStyle(notification.type)} ${
-                  notification.actionable
-                    ? "cursor-pointer hover:shadow-md transition-shadow"
-                    : ""
+                className={`border rounded-lg p-4 ${getNotificationStyle(type)} ${
+                  isClickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
                 }`}
-                onClick={
-                  notification.actionable ? notification.action : undefined
-                }
+                onClick={isClickable ? notification.action : undefined}
               >
                 <div className="flex items-start space-x-3">
-                  <div
-                    className={`flex-shrink-0 ${getIconColor(notification.type)}`}
-                  >
+                  <div className={`flex-shrink-0 ${getIconColor(type)}`}>
                     <Icon size={20} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-blue-700 text-sm">
-                        {notification.title}
-                      </h3>
+                      <h3 className="font-semibold text-blue-700 text-sm">{notification.title}</h3>
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500">
-                          {notification.time}
-                        </span>
-                        {notification.actionable && (
-                          <ChevronRight className="w-4 h-4 text-blue-400" />
-                        )}
+                        <span className="text-xs text-gray-500">{timeLabel}</span>
+                        {isClickable && <ChevronRight className="w-4 h-4 text-blue-400" />}
                       </div>
                     </div>
-                    <p className="text-gray-700 text-sm mb-2">
-                      {notification.message}
-                    </p>
-                    {notification.actionable && (
-                      <p className="text-xs text-blue-700 font-medium">
-                        👆 {notification.actionText}
-                      </p>
+                    <p className="text-gray-700 text-sm mb-2">{notification.message}</p>
+                    {notification.actionText && (
+                      <p className="text-xs text-blue-700 font-medium">👆 {notification.actionText}</p>
+                    )}
+
+                    {notification.multiAction && Array.isArray(notification.actions) && notification.actions.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {notification.actions.map((act, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              act.action && act.action()
+                            }}
+                            className={`px-3 py-1 rounded text-xs font-medium border bg-white hover:bg-gray-50 ${
+                              act.color === 'green'
+                                ? 'text-green-700 border-green-200'
+                                : act.color === 'blue'
+                                ? 'text-blue-700 border-blue-200'
+                                : act.color === 'purple'
+                                ? 'text-purple-700 border-purple-200'
+                                : 'text-gray-700 border-gray-200'
+                            }`}
+                          >
+                            {act.text}
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -372,55 +205,36 @@ export default function Notifications () {
         </div>
       )}
 
-      <PromotionModal
-        isOpen={showPromotionModal}
-        onClose={() => {
-          setShowPromotionModal(false)
-          setSelectedProductId(null)
-        }}
-        highStockProducts={highStockProductsState}
-        popularProducts={products.filter(
-          (p) => !highStockProductsState.some((hp) => hp.id === p.id)
-        )}
-        currentUser={currentUser}
-      />
-
-      {notifications.some(
-        (n) => n.type === "error" || n.type === "warning"
-      ) && (
+      {notifications.some((n) => {
+        const t = getVisualType(n)
+        return t === 'error' || t === 'warning'
+      }) && (
         <div className="card">
           <h3 className="font-semibold text-blue-700 mb-3 flex items-center">
             <Calendar className="w-5 h-5 mr-2" />
             Panduan Tindakan
           </h3>
           <div className="space-y-3 text-sm">
-            {notifications.filter((n) => n.type === "error").length > 0 && (
+            {notifications.some((n) => getVisualType(n) === 'error') && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 font-medium mb-1">
-                  🚨 Stok Habis - Perlu Tindakan Segera
-                </p>
+                <p className="text-red-700 font-medium mb-1">🚨 Stok Habis / Error - Perlu Tindakan Segera</p>
                 <p className="text-red-600">
-                  Klik notifikasi &quot;Stok Habis&quot; untuk langsung ke
-                  halaman Stok dan tambah inventory.
+                  Gunakan notifikasi ini untuk langsung menangani stok habis atau error penting lain.
                 </p>
               </div>
             )}
-            {notifications.filter((n) => n.type === "warning").length > 0 && (
+            {notifications.some((n) => getVisualType(n) === 'warning') && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-700 font-medium mb-1">
-                  ⚠️ Stok Menipis - Informasi
-                </p>
+                <p className="text-yellow-700 font-medium mb-1">⚠️ Peringatan - Informasi Penting</p>
                 <p className="text-yellow-600">
-                  Produk ini masih tersedia tapi perlu diperhatikan untuk restok
-                  berikutnya.
+                  Notifikasi peringatan membantu Anda mengantisipasi masalah sebelum terjadi.
                 </p>
               </div>
             )}
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-700 font-medium mb-1">💡 Tips</p>
               <p className="text-blue-600">
-                Hanya notifikasi &quot;Stok Habis&quot; yang bisa diklik untuk
-                tindakan langsung.
+                Notifikasi dengan tombol aksi dapat diklik untuk langsung menuju halaman atau fitur terkait.
               </p>
             </div>
           </div>
