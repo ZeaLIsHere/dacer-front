@@ -21,13 +21,6 @@ export function NotificationProvider ({ children }) {
     
     setNotifications(prev => [...prev, newNotification])
     // unreadCount will be auto-calculated by useEffect
-    
-    // Auto remove after 10 seconds if no action required
-    if (!notification.persistent) {
-      setTimeout(() => {
-        removeNotification(id)
-      }, 10000)
-    }
   }
 
   // Auto-calculate unread count whenever notifications change
