@@ -270,7 +270,7 @@ export default function ChatbotPage () {
 
           <div className="mt-3 text-center">
             <p className="text-xs text-[#6B7280]">
-              Agam AI siap bantu - Tanya tentang jualan, stok, tren, atau minta saran
+              Asisten AI siap bantu - Tanya tentang jualan, stok, tren, atau minta saran
             </p>
           </div>
         </div>

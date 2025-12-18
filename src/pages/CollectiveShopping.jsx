@@ -4,7 +4,7 @@ import { AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
-import { API_BASE_URL } from '../apiClient'
+import { apiFetch } from '../apiClient'
 import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function CollectiveShopping () {
@@ -22,9 +22,8 @@ export default function CollectiveShopping () {
         return
       }
       try {
-        const res = await fetch(`${API_BASE_URL}/api/products?userId=${currentUser.id}&storeId=${currentStore.id}`)
-        const data = await res.json()
-        setProducts(data.data?.products || [])
+        const { data } = await apiFetch(`/api/products?userId=${currentUser.id}&storeId=${currentStore.id}`)
+        setProducts(data?.products || [])
       } catch (err) {
         console.error('Error fetching products for collective shopping:', err)
         showError('Gagal memuat data produk untuk belanja kolektif')
@@ -46,8 +45,7 @@ export default function CollectiveShopping () {
     const discountPercentage = 20
     const discountedPrice = Math.round(originalPrice * (1 - discountPercentage / 100))
     const batchSize = product.batch_size && product.batch_size > 1 ? product.batch_size : 1
-    const minOrder = batchSize > 1 ? batchSize * 5 : 10
-    const quantityToBuy = minOrder
+    const quantityToBuy = batchSize * 2
     const savingsPerUnit = originalPrice - discountedPrice
     const totalSavings = savingsPerUnit * quantityToBuy
     const expectedProfit = (originalPrice - discountedPrice) * quantityToBuy
@@ -58,7 +56,7 @@ export default function CollectiveShopping () {
       originalPrice,
       discountedPrice,
       discountPercentage,
-      minOrder,
+      minOrder: quantityToBuy,
       quantityToBuy,
       totalSavings,
       expectedProfit,
@@ -69,11 +67,36 @@ export default function CollectiveShopping () {
     }
   }
 
-  const handleCollectiveJoin = (offer) => {
+  const handleCollectiveJoin = async (offer) => {
     if (!offer) return
-    showSuccess(
-      `Simulasi Belanja Kolektif: ${offer.productName} • Qty ${offer.quantityToBuy} • Potensi hemat ${formatCurrency(offer.totalSavings)}`
-    )
+    
+    try {
+      // Update product stock by adding the purchased quantity
+      await apiFetch(`/api/products/${offer.productId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          userId: currentUser.id,
+          storeId: currentStore.id,
+          stok: offer.currentStock + offer.quantityToBuy
+        })
+      })
+      
+      // Update local state to reflect the change
+      setProducts(prevProducts => 
+        prevProducts.map(product => 
+          product.id === offer.productId 
+            ? { ...product, stok: product.stok + offer.quantityToBuy }
+            : product
+        )
+      )
+      
+      showSuccess(
+        `Belanja kolektif berhasil! ${offer.productName} • Stok bertambah ${offer.quantityToBuy} unit • Hemat ${formatCurrency(offer.totalSavings)}`
+      )
+    } catch (err) {
+      console.error('Error updating product stock:', err)
+      showError('Gagal memperbarui stok produk. Silakan coba lagi.')
+    }
   }
 
   if (loading) {
@@ -191,11 +214,8 @@ export default function CollectiveShopping () {
                     onClick={() => handleCollectiveJoin(offer)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition-all"
                   >
-                    Ikut Belanja (Simulasi)
+                    Ikut Belanja
                   </button>
-                  <p className="mt-1 text-[11px] text-gray-500 text-center">
-                    Versi ini mensimulasikan belanja kolektif tanpa mengubah data stok di backend.
-                  </p>
                 </div>
               </motion.div>
             )

@@ -184,7 +184,6 @@ export default function Statistics () {
   }
 
   const getTotalProfit = () => {
-    // Approximate profit: sum over items (sale price - cost) * qty
     const productMap = products.reduce((map, p) => {
       map[p.id] = p
       return map
@@ -523,7 +522,7 @@ export default function Statistics () {
               <TrendingUp className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Profit (perkiraan)</p>
+              <p className="text-sm text-gray-600">Total Profit</p>
               <p className="text-lg font-bold text-gray-800 font-mono">{formatCurrency(totalProfit)}</p>
             </div>
           </div>
