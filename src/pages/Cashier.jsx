@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, User, Package, ShoppingCart, X, Percent, Calculator, Check, Printer } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Package, ShoppingCart, X, Check } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
-import { useNotification } from '../contexts/NotificationContext'
 import { API_BASE_URL } from '../apiClient'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function Cashier () {
   const { currentUser } = useAuth()
   const { currentStore } = useStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const { showPaymentSuccess, showPaymentFailed, showSaleRecorded, showError } = useToast()
-  const { notifyTransactionSuccess } = useNotification()
   const [products, setProducts] = useState([])
   const [customers, setCustomers] = useState([])
-  const [promotions, setPromotions] = useState([])
   const [cart, setCart] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -25,15 +24,12 @@ export default function Cashier () {
   const [showCustomerModal, setShowCustomerModal] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('tunai')
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [discountType, setDiscountType] = useState('none') // none, percentage, fixed
-  const [discountValue, setDiscountValue] = useState(0)
   const [cashReceived, setCashReceived] = useState(0)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [lastTransactionData, setLastTransactionData] = useState(null) // simpan data transaksi untuk struk
-  const [appliedPromotion, setAppliedPromotion] = useState(null)
+  const [lastTransactionData, setLastTransactionData] = useState(null)
   const [categories, setCategories] = useState(['Semua'])
   const [selectedCategory, setSelectedCategory] = useState('Semua')
-  const [showCartPanel, setShowCartPanel] = useState(false) // untuk mobile: tampilkan panel keranjang saat ditekan
+  const [showCartPanel, setShowCartPanel] = useState(false)
 
   // Load products and customers
   useEffect(() => {
@@ -41,21 +37,18 @@ export default function Cashier () {
     async function fetchData () {
       setIsLoading(true)
       try {
-        const [productRes, customerRes, promoRes] = await Promise.all([
+        const [productRes, customerRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/products?userId=${currentUser.id}&storeId=${currentStore.id}`),
-          fetch(`${API_BASE_URL}/api/customers?userId=${currentUser.id}&storeId=${currentStore.id}`),
-          fetch(`${API_BASE_URL}/api/promotions?userId=${currentUser.id}&storeId=${currentStore.id}`)
+          fetch(`${API_BASE_URL}/api/customers?userId=${currentUser.id}&storeId=${currentStore.id}`)
         ])
         const productData = await productRes.json()
         const customerData = await customerRes.json()
-        const promoData = await promoRes.json()
         const loadedProducts = productData.data?.products || []
         setProducts(loadedProducts)
         // derive categories similar to old repo
         const uniqueCategories = ['Semua', ...new Set(loadedProducts.map(p => p.kategori || 'Umum'))]
         setCategories(uniqueCategories)
         setCustomers(customerData.data?.customers || [])
-        setPromotions(promoData.data?.promotions || [])
       } catch (err) {
         console.error('Failed to load data:', err)
         setProducts([])
@@ -67,32 +60,19 @@ export default function Cashier () {
     fetchData()
   }, [currentUser, currentStore])
 
-  // Check and apply promotions
-  const checkAndApplyPromotion = useCallback(() => {
-    if (!promotions.length || cart.length === 0) return
-
-    // Find applicable promotion (simple logic: first matching promotion)
-    const applicablePromo = promotions.find(promo => {
-      const totalQty = cart.reduce((sum, item) => sum + item.qty, 0)
-      return totalQty >= promo.min_quantity
-    })
-
-    if (applicablePromo) {
-      setAppliedPromotion(applicablePromo)
-      if (applicablePromo.discount_type === 'percentage') {
-        setDiscountType('percentage')
-        setDiscountValue(applicablePromo.discount_value)
-      } else {
-        setDiscountType('fixed')
-        setDiscountValue(applicablePromo.discount_value)
+  // Handle product from Dashboard navigation
+  useEffect(() => {
+    if (location.state?.productToAdd && products.length > 0) {
+      const productToAdd = location.state.productToAdd
+      // Check if product exists in products list and has stock
+      const product = products.find(p => p.id === productToAdd.id)
+      if (product && Number(product.stok) > 0) {
+        addToCart(product)
+        // Clear navigation state to prevent re-adding on refresh
+        navigate(location.pathname, { replace: true, state: {} })
       }
     }
-  }, [promotions, cart])
-
-  // Apply promotion when cart changes
-  useEffect(() => {
-    checkAndApplyPromotion()
-  }, [cart, checkAndApplyPromotion])
+  }, [location.state, products])
 
   // Filter products by search, category, and stock > 0 (similar to old cashier)
   const filteredProducts = products.filter(product => {
@@ -110,16 +90,16 @@ export default function Cashier () {
       if (existing) {
         return prev.map(item =>
           item.id === product.id
-            ? { ...item, qty: item.qty + 1, subtotal: (item.qty + 1) * item.harga }
+            ? { ...item, qty: item.qty + 1, subtotal: Number((item.qty + 1) * item.harga) }
             : item
         )
       } else {
         return [...prev, {
           id: product.id,
           nama: product.nama,
-          harga: product.harga,
+          harga: Number(product.harga),
           qty: 1,
-          subtotal: product.harga
+          subtotal: Number(product.harga)
         }]
       }
     })
@@ -131,7 +111,7 @@ export default function Cashier () {
       if (item.id === id) {
         const newQty = item.qty + delta
         if (newQty <= 0) return null
-        return { ...item, qty: newQty, subtotal: newQty * item.harga }
+        return { ...item, qty: newQty, subtotal: Number(newQty * item.harga) }
       }
       return item
     }).filter(Boolean))
@@ -143,97 +123,12 @@ export default function Cashier () {
   }
 
   // Totals
-  const totalItems = cart.reduce((sum, item) => sum + item.qty, 0)
-  const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
-  const discountAmount = discountType === 'percentage' ? (subtotal * discountValue) / 100 : discountType === 'fixed' ? discountValue : 0
-  const totalAfterDiscount = subtotal - discountAmount
-  const totalAmount = totalAfterDiscount
+  const totalItems = cart.reduce((sum, item) => sum + Number(item.qty), 0)
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.subtotal), 0)
+  const totalAmount = subtotal
 
   // Change calculation
   const change = paymentMethod === 'tunai' ? cashReceived - totalAmount : 0
-
-  // Print receipt function
-  const printReceipt = (saleData) => {
-    const receiptContent = `
-      <html>
-        <head>
-          <title>Struk Pembayaran - ${currentStore?.nama || 'Kasir'}</title>
-          <style>
-            body { font-family: 'Courier New', monospace; padding: 20px; max-width: 400px; margin: 0 auto; }
-            .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .footer { border-top: 2px dashed #000; padding-top: 10px; margin-top: 20px; text-align: center; }
-            .item { display: flex; justify-content: space-between; margin: 5px 0; }
-            .total { font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>${currentStore?.nama || 'Kasir'}</h2>
-            <p>${currentStore?.alamat || ''}</p>
-            <p>Telp: ${currentStore?.telepon || ''}</p>
-            <p>=====================</p>
-          </div>
-          
-          <div>
-            <p>No: ${saleData.order_id || 'N/A'}</p>
-            <p>Tanggal: ${new Date(saleData.timestamp).toLocaleString('id-ID')}</p>
-            <p>Kasir: ${currentUser?.nama || 'Admin'}</p>
-            ${selectedCustomer ? `<p>Pelanggan: ${selectedCustomer.nama || selectedCustomer.name}</p>` : ''}
-            <p>Metode: ${saleData.payment_method}</p>
-          </div>
-          
-          <div style="margin: 20px 0;">
-            <h3>Detail Pembelian:</h3>
-            ${(Array.isArray(saleData.items) ? saleData.items : []).map(item => `
-              <div class="item">
-                <span>${item.nama} x${item.qty}</span>
-                <span>Rp ${Number(item.subtotal).toLocaleString('id-ID')}</span>
-              </div>
-            `).join('')}
-          </div>
-          
-          <div class="total">
-            <div class="item">
-              <span>Subtotal:</span>
-              <span>Rp ${Number(saleData.subtotal).toLocaleString('id-ID')}</span>
-            </div>
-            ${Number(saleData.discount_amount) > 0 ? `
-              <div class="item">
-                <span>Diskon:</span>
-                <span> -Rp ${Number(saleData.discount_amount).toLocaleString('id-ID')}</span>
-              </div>
-            ` : ''}
-            <div class="item">
-              <span><strong>Total:</strong></span>
-              <span><strong>Rp ${Number(saleData.total_amount).toLocaleString('id-ID')}</strong></span>
-            </div>
-            ${saleData.cash_received ? `
-              <div class="item">
-                <span>Tunai:</span>
-                <span>Rp ${Number(saleData.cash_received).toLocaleString('id-ID')}</span>
-              </div>
-              <div class="item">
-                <span>Kembalian:</span>
-                <span>Rp ${Number(saleData.change).toLocaleString('id-ID')}</span>
-              </div>
-            ` : ''}
-          </div>
-          
-          <div class="footer">
-            <p>=====================</p>
-            <p>Terima kasih atas kunjungan Anda</p>
-            <p>Barang yang sudah dibeli tidak dapat dikembalikan</p>
-          </div>
-        </body>
-      </html>
-    `
-    
-    const printWindow = window.open('', '_blank')
-    printWindow.document.write(receiptContent)
-    printWindow.document.close()
-    printWindow.print()
-    printWindow.close()
-  }
 
   // Navigate to Debts page with cart data (debt checkout, mirroring old cashier flow)
   const handleDebtCheckout = () => {
@@ -253,8 +148,6 @@ export default function Cashier () {
     // Reset local cart state after navigation
     setCart([])
     setSelectedCustomer(null)
-    setDiscountType('none')
-    setDiscountValue(0)
     setCashReceived(0)
   }
   const handlePayment = async () => {
@@ -313,9 +206,6 @@ export default function Cashier () {
           subtotal: item.subtotal
         })),
         subtotal,
-        discount_type: discountType,
-        discount_value: discountValue,
-        discount_amount: discountAmount,
         total_amount: totalAmount,
         total_items: totalItems,
         payment_method: paymentMethod,
@@ -347,11 +237,8 @@ export default function Cashier () {
         showSaleRecorded(totalAmount, cart[0].nama)
       }
 
-      if (notifyTransactionSuccess) {
-        notifyTransactionSuccess(totalAmount, paymentMethod, () => {
-          setShowSuccessModal(true)
-        })
-      }
+      // Show success modal directly
+      setShowSuccessModal(true)
 
       // Simpan data transaksi untuk struk SEBELUM cart direset
       const transactionData = {
@@ -359,7 +246,6 @@ export default function Cashier () {
         timestamp: new Date(),
         items: cart,
         subtotal,
-        discount_amount: discountAmount,
         total_amount: totalAmount,
         payment_method: paymentMethod,
         cash_received: cashReceived,
@@ -370,8 +256,6 @@ export default function Cashier () {
       // Reset
       setCart([])
       setSelectedCustomer(null)
-      setDiscountType('none')
-      setDiscountValue(0)
       setCashReceived(0)
       setShowPaymentModal(false)
       setShowSuccessModal(true)
@@ -487,7 +371,7 @@ export default function Cashier () {
                         <p className="text-xs text-gray-500">Stok: {product.stok}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-sm">Rp {product.harga.toLocaleString('id-ID')}</p>
+                        <p className="font-bold text-sm">{formatCurrency(product.harga)}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -548,55 +432,6 @@ export default function Cashier () {
               </div>
             </div>
 
-            {/* Discount */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Diskon</label>
-              {appliedPromotion ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-700 font-medium">{appliedPromotion.name}</span>
-                    <button
-                      onClick={() => {
-                        setAppliedPromotion(null)
-                        setDiscountType('none')
-                        setDiscountValue(0)
-                      }}
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-green-600 mt-1">
-                    {appliedPromotion.discount_type === 'percentage' 
-                      ? `${appliedPromotion.discount_value}%` 
-                      : `Rp ${appliedPromotion.discount_value}`}
-                    {appliedPromotion.min_quantity > 1 && ` (Min. ${appliedPromotion.min_quantity} item)`}
-                  </p>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <select
-                    className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={discountType}
-                    onChange={e => setDiscountType(e.target.value)}
-                  >
-                    <option value="none">Tidak Ada</option>
-                    <option value="percentage">Persentase (%)</option>
-                    <option value="fixed">Nominal (Rp)</option>
-                  </select>
-                  {discountType !== 'none' && (
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder={discountType === 'percentage' ? '%' : 'Rp'}
-                      className="w-24 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={discountValue || ''}
-                      onChange={e => setDiscountValue(Number(e.target.value))}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
 
             {cart.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -617,7 +452,7 @@ export default function Cashier () {
                       >
                         <div className="flex-1">
                           <h4 className="text-sm font-medium">{item.nama}</h4>
-                          <p className="text-xs text-gray-500">Rp {item.harga.toLocaleString('id-ID')} x {item.qty}</p>
+                          <p className="text-xs text-gray-500">{formatCurrency(item.harga)} x {item.qty}</p>
                         </div>
                         <div className="flex items-center gap-1">
                           <button
@@ -648,17 +483,11 @@ export default function Cashier () {
                 <div className="border-t pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
-                    <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Diskon:</span>
-                      <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between font-bold">
                     <span>Total:</span>
-                    <span>Rp {totalAmount.toLocaleString('id-ID')}</span>
+                    <span>{formatCurrency(totalAmount)}</span>
                   </div>
                 </div>
 
@@ -876,7 +705,7 @@ export default function Cashier () {
                     {cashReceived > 0 && (
                       <div className="mt-2 p-2 bg-green-50 rounded text-sm">
                         <span className="font-medium">Kembalian: </span>
-                        <span className="text-green-700 font-bold">Rp {change.toLocaleString('id-ID')}</span>
+                        <span className="text-green-700 font-bold">{formatCurrency(change)}</span>
                       </div>
                     )}
                   </div>
@@ -885,7 +714,7 @@ export default function Cashier () {
                 <div className="border-t pt-4">
                   <div className="flex justify-between font-bold text-lg mb-4">
                     <span>Total:</span>
-                    <span>Rp {totalAmount.toLocaleString('id-ID')}</span>
+                    <span>{formatCurrency(totalAmount)}</span>
                   </div>
 
                   <div className="flex gap-2">
@@ -934,21 +763,14 @@ export default function Cashier () {
                 </div>
                 <h2 className="text-xl font-bold mb-2">Pembayaran Berhasil!</h2>
                 <p className="text-gray-600 mb-1">Transaksi #{lastTransactionData?.order_id || 'N/A'}</p>
-                <p className="text-sm text-gray-500 mb-6">Total: Rp {Number(lastTransactionData?.total_amount || 0).toLocaleString('id-ID')}</p>
+                <p className="text-sm text-gray-500 mb-6">Total: {formatCurrency(lastTransactionData?.total_amount || 0)}</p>
                 
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowSuccessModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Selesai
-                  </button>
-                  <button
-                    onClick={() => printReceipt(lastTransactionData)}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    <Printer className="w-4 h-4 inline mr-2" />
-                    Print Struk
                   </button>
                 </div>
               </div>

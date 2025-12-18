@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { API_BASE_URL } from '../apiClient'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function TodayRevenue () {
   const { currentUser } = useAuth()
@@ -99,7 +100,7 @@ export default function TodayRevenue () {
                 <div className="p-3 bg-green-100 rounded-full inline-block mb-3">
                   <DollarSign className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold">Rp {todaySummary.totalRevenue.toLocaleString('id-ID')}</h3>
+                <h3 className="text-2xl font-bold">{formatCurrency(todaySummary.totalRevenue)}</h3>
                 <p className="text-gray-500">Total Pendapatan</p>
               </div>
               <div className="text-center">
@@ -167,14 +168,14 @@ export default function TodayRevenue () {
                           {sale.items?.map((item, i) => (
                             <div key={i} className="flex justify-between text-sm">
                               <span className="text-gray-600">{item.nama} x {item.qty}</span>
-                              <span className="font-medium">Rp {Number(item.subtotal).toLocaleString('id-ID')}</span>
+                              <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-lg font-bold text-blue-600">
-                          Rp {Number(sale.total_amount).toLocaleString('id-ID')}
+                          {formatCurrency(sale.total_amount)}
                         </p>
                         <p className="text-xs text-gray-500">
                           {sale.total_items || (sale.items?.reduce((t, i) => t + (i.qty || 0), 0) || 0)} item

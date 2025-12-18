@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
 import { API_BASE_URL } from '../apiClient'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function CollectiveShopping () {
   const { currentUser } = useAuth()
@@ -71,7 +72,7 @@ export default function CollectiveShopping () {
   const handleCollectiveJoin = (offer) => {
     if (!offer) return
     showSuccess(
-      `Simulasi Belanja Kolektif: ${offer.productName} • Qty ${offer.quantityToBuy} • Potensi hemat Rp ${offer.totalSavings.toLocaleString('id-ID')}`
+      `Simulasi Belanja Kolektif: ${offer.productName} • Qty ${offer.quantityToBuy} • Potensi hemat ${formatCurrency(offer.totalSavings)}`
     )
   }
 
@@ -147,7 +148,7 @@ export default function CollectiveShopping () {
                     <p className="text-sm text-gray-600">
                       Harga jual saat ini:{' '}
                       <span className="font-semibold">
-                        Rp {offer.originalPrice.toLocaleString('id-ID')}
+                        {formatCurrency(offer.originalPrice)}
                       </span>
                     </p>
                   </div>
@@ -162,7 +163,7 @@ export default function CollectiveShopping () {
                   <div>
                     <p className="text-xs text-gray-500">Harga grosir / unit</p>
                     <p className="font-semibold">
-                      Rp {offer.discountedPrice.toLocaleString('id-ID')}
+                      {formatCurrency(offer.discountedPrice)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       Minimal order:{' '}
@@ -175,10 +176,10 @@ export default function CollectiveShopping () {
                   <div>
                     <p className="text-xs text-gray-500">Estimasi keuntungan jika ikut</p>
                     <p className="font-semibold text-blue-700">
-                      Rp {offer.expectedProfit.toLocaleString('id-ID')}
+                      {formatCurrency(offer.expectedProfit)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      (Hemat Rp {offer.totalSavings.toLocaleString('id-ID')} untuk{' '}
+                      (Hemat {formatCurrency(offer.totalSavings)} untuk{' '}
                       {offer.quantityToBuy} unit)
                     </p>
                   </div>

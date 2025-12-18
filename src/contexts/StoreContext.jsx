@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from "./AuthContext"
-import { API_BASE_URL } from '../apiClient'
+import { API_BASE_URL, apiFetch } from '../apiClient'
 
 const StoreContext = createContext()
 
@@ -114,18 +114,11 @@ export function StoreProvider({ children }) {
       is_active: updateData.is_active
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/stores/${storeId}`, {
+    const data = await apiFetch(`/api/stores/${storeId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Gagal mengupdate toko')
-    }
-
-    const data = await response.json()
     const updatedStore = data.store
 
     setStores(prev => prev.map(store => store.id === storeId ? updatedStore : store))

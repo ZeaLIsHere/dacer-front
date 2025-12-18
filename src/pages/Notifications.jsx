@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Bell, AlertTriangle, TrendingUp, Package, Star, Calendar, ChevronRight } from 'lucide-react'
 import { useNotification } from '../contexts/NotificationContext'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function Notifications () {
   const { notifications, markAllAsRead } = useNotification()

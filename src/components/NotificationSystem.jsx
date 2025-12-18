@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Bell, CheckCircle, AlertCircle, Info } from 'lucide-react'
-import { API_BASE_URL } from '../apiClient'
+import { apiFetch } from '../apiClient'
 
 function NotificationSystem () {
   const { currentUser } = useAuth()
@@ -32,8 +32,7 @@ function NotificationSystem () {
 
     const fetchNotifications = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/notifications?userId=${currentUser.id}`)
-        const { data } = await response.json()
+        const data = await apiFetch(`/api/notifications?userId=${currentUser.id}`)
         setNotifications(data || [])
       } catch (error) {
         console.error('Error fetching notifications:', error)

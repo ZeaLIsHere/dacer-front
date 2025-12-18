@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
 import { apiFetch } from '../apiClient'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function Stock () {
   const { currentUser } = useAuth()
@@ -302,19 +303,6 @@ export default function Stock () {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-start gap-2 mb-4">
           <button
             type="button"
-            onClick={() => {
-              // Placeholder: implement PDF export when backend/support is ready
-              // Misalnya nanti bisa memanggil endpoint laporan PDF
-              // Saat ini kita tidak melakukan apa-apa
-            }}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 justify-center sm:justify-start"
-          >
-            <Package className="w-4 h-4" />
-            Export PDF
-          </button>
-
-          <button
-            type="button"
             onClick={exportToCSV}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 justify-center sm:justify-start"
           >
@@ -496,8 +484,8 @@ export default function Stock () {
                         </td>
                         <td className="px-4 py-3 text-sm">{product.kategori || '-'}</td>
                         <td className="px-4 py-3 text-sm font-medium">{product.stok}</td>
-                        <td className="px-4 py-3 text-sm">Rp {Number(product.harga).toLocaleString('id-ID')}</td>
-                        <td className="px-4 py-3 text-sm">Rp {Number(product.harga_modal).toLocaleString('id-ID')}</td>
+                        <td className="px-4 py-3 text-sm">{formatCurrency(product.harga)}</td>
+                        <td className="px-4 py-3 text-sm">{formatCurrency(product.harga_modal)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
                             <StatusIcon className="w-3 h-3" />

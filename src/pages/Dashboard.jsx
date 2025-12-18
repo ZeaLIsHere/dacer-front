@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Calendar, BarChart3, PieChart, Activity, AlertCircle, AlertTriangle, Plus } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, BarChart3, PieChart, Activity, AlertCircle, AlertTriangle, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
@@ -8,9 +8,8 @@ import { useToast } from '../contexts/ToastContext'
 import { API_BASE_URL } from '../apiClient'
 import ProductCard from '../components/ProductCard'
 import AddProductModal from '../components/AddProductModal'
+import { formatCurrency } from '../utils/currencyFormatter'
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart as RePieChart,
@@ -20,16 +19,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts'
-
-const EMPTY_SUMMARY = {
-  today: { totalRevenue: 0, totalTransactions: 0, totalItems: 0 },
-  yesterday: { totalRevenue: 0, totalTransactions: 0, totalItems: 0 },
-  week: { totalRevenue: 0, totalTransactions: 0, totalItems: 0 },
-  month: { totalRevenue: 0, totalTransactions: 0, totalItems: 0 }
-}
 
 // Simple local insight generator to mirror old dashboard AI-like tips
 function generateSimpleInsights (sales, products) {
@@ -38,8 +29,6 @@ function generateSimpleInsights (sales, products) {
   }
 
   const totalRevenue = sales.reduce((sum, s) => sum + Number(s.price || s.total_amount || 0), 0)
-  const totalTransactions = sales.length
-
   const productMap = {}
   sales.forEach(sale => {
     sale.items?.forEach(item => {
@@ -66,7 +55,7 @@ function generateSimpleInsights (sales, products) {
   if (totalRevenue > 0) {
     insights.push({
       title: 'Pendapatan hari ini',
-      message: `Total pendapatan dari transaksi yang tercatat mencapai Rp ${totalRevenue.toLocaleString('id-ID')}.`,
+      message: `Total pendapatan dari transaksi yang tercatat mencapai ${formatCurrency(totalRevenue)}.`,
       recommendation: 'Pertahankan performa penjualan dengan memastikan stok produk laris tetap aman.',
       priority: 'medium'
     })
@@ -102,8 +91,7 @@ export default function Dashboard () {
   const { currentUser } = useAuth()
   const { currentStore } = useStore()
   const navigate = useNavigate()
-  const { showNetworkError, showError } = useToast()
-  const [summary, setSummary] = useState(EMPTY_SUMMARY)
+  const { showError } = useToast()
   const [insights, setInsights] = useState([])
   const [sales, setSales] = useState([])
   const [products, setProducts] = useState([])
@@ -111,11 +99,17 @@ export default function Dashboard () {
   const [error, setError] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
 
+  // Handle sell product - navigate to cashier with product
+  const handleSellProduct = (product) => {
+    navigate('/cashier', {
+      state: { productToAdd: product }
+    })
+  }
+
   // Fetch summary and products for analytics
   useEffect(() => {
     // Jika user atau store belum siap, jangan stuck di loading
     if (!currentUser || !currentStore) {
-      setSummary(EMPTY_SUMMARY)
       setSales([])
       setInsights([])
       setError(null)
@@ -138,7 +132,6 @@ export default function Dashboard () {
         const salesData = summaryData.data.sales || []
         const productList = productsData.data?.products || []
 
-        setSummary(summaryData.data.summary || EMPTY_SUMMARY)
         setSales(salesData)
         setProducts(productList)
 
@@ -159,18 +152,13 @@ export default function Dashboard () {
       } catch (err) {
         console.error('Dashboard fetch error:', err)
         setError('Gagal memuat data dashboard')
-
-        if (showNetworkError) {
-          showNetworkError()
-        } else {
-          showError('Gagal memuat data dashboard. Periksa koneksi atau coba lagi.')
-        }
+        showError('Gagal memuat data dashboard. Periksa koneksi atau coba lagi.')
       } finally {
         setLoading(false)
       }
     }
     fetchData()
-  }, [currentUser, currentStore])
+  }, [currentUser, currentStore, showError])
 
   // Process data for charts
   const weeklyChartData = useMemo(() => {
@@ -193,16 +181,30 @@ export default function Dashboard () {
     return weekData
   }, [sales])
 
-  const categoryData = useMemo(() => {
+  const productData = useMemo(() => {
     if (!sales.length) return []
-    const categoryMap = {}
+    const productMap = {}
+    let totalSales = 0
+    
+    // Calculate total sales per product
     sales.forEach(sale => {
       sale.items?.forEach(item => {
-        const cat = item.kategori || 'Lainnya'
-        categoryMap[cat] = (categoryMap[cat] || 0) + Number(item.subtotal || 0)
+        const productName = item.nama || 'Lainnya'
+        const subtotal = Number(item.subtotal || 0)
+        productMap[productName] = (productMap[productName] || 0) + subtotal
+        totalSales += subtotal
       })
     })
-    return Object.entries(categoryMap).map(([name, value]) => ({ name, value }))
+    
+    // Convert to array with percentage
+    return Object.entries(productMap)
+      .map(([name, value]) => ({
+        name,
+        value,
+        percentage: totalSales > 0 ? (value / totalSales) * 100 : 0
+      }))
+      .sort((a, b) => b.value - a.value) // Sort by highest sales
+      .slice(0, 10) // Show top 10 products
   }, [sales])
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
@@ -274,15 +276,12 @@ export default function Dashboard () {
     )
   }
 
-  // Gunakan fallback agar tidak pernah baca properti dari null
-  const safeSummary = summary || EMPTY_SUMMARY
-
   // Stats cards adapted to mirror old Firebase dashboard metrics
   const statCards = [
     {
       key: 'today-revenue',
       title: 'Total Pendapatan Hari Ini',
-      value: `Rp ${getTodayRevenue().toLocaleString('id-ID')}`,
+      value: formatCurrency(getTodayRevenue()),
       change: `${getTodayTransactions()} transaksi`,
       icon: DollarSign,
       color: 'bg-green-100 text-green-700',
@@ -408,7 +407,7 @@ export default function Dashboard () {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <ProductCard product={product} />
+                <ProductCard product={product} onSell={handleSellProduct} />
               </motion.div>
             ))}
           </div>
@@ -433,13 +432,13 @@ export default function Dashboard () {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
               <YAxis />
-              <Tooltip formatter={(value) => `Rp ${value.toLocaleString('id-ID')}`} />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
               <Bar dataKey="revenue" fill="#3B82F6" />
             </BarChart>
           </ResponsiveContainer>
         </motion.div>
 
-        {/* Category Pie Chart */}
+        {/* Product Sales Pie Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -448,31 +447,46 @@ export default function Dashboard () {
         >
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <PieChart className="w-5 h-5" />
-            Penjualan per Kategori
+            Penjualan per Produk
           </h2>
-          {categoryData.length > 0 ? (
+          {productData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <RePieChart>
                 <Pie
-                  data={categoryData}
+                  data={productData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percentage }) => `${name} ${percentage.toFixed(1)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {categoryData.map((entry, index) => (
+                  {productData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `Rp ${value.toLocaleString('id-ID')}`} />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(value)}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload[0]) {
+                      const data = payload[0].payload
+                      return (
+                        <div className="bg-white p-2 border border-gray-200 rounded shadow-lg">
+                          <p className="font-semibold">{data.name}</p>
+                          <p className="text-sm">{formatCurrency(data.value)}</p>
+                          <p className="text-xs text-gray-500">{data.percentage.toFixed(1)}% dari total</p>
+                        </div>
+                      )
+                    }
+                    return null
+                  }}
+                />
               </RePieChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-64 flex items-center justify-center text-gray-500">
-              <p>Belum ada data kategori</p>
+              <p>Belum ada data penjualan produk</p>
             </div>
           )}
         </motion.div>
@@ -551,7 +565,7 @@ export default function Dashboard () {
                     <td className="px-4 py-3 text-sm font-medium">{sale.order_id}</td>
                     <td className="px-4 py-3 text-sm">{new Date(sale.timestamp).toLocaleString('id-ID')}</td>
                     <td className="px-4 py-3 text-sm">{sale.total_items} item</td>
-                    <td className="px-4 py-3 text-sm font-medium">Rp {Number(sale.total_amount).toLocaleString('id-ID')}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{formatCurrency(sale.total_amount)}</td>
                     <td className="px-4 py-3 text-sm capitalize">{sale.payment_method}</td>
                   </tr>
                 ))}

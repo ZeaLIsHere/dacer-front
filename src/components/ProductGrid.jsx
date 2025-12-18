@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useCart } from '../contexts/CartContext'
 import { Plus, Minus } from 'lucide-react'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function ProductGrid ({ products }) {
   const { cart, addItem, updateQuantity } = useCart()
@@ -43,7 +44,7 @@ export default function ProductGrid ({ products }) {
                 {product.originalPrice && product.originalPrice > product.harga && ' (Diskon)'}
               </h3>
               <p className="text-primary font-bold">
-                Rp {product.harga.toLocaleString('id-ID')}
+                {formatCurrency(product.harga)}
               </p>
               <p className="text-xs text-gray-500">
                 Stok: {product.stok} {product.satuan}

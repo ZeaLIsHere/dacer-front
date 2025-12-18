@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
 import { API_BASE_URL } from '../apiClient'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function Statistics () {
   const { currentUser } = useAuth()
@@ -296,7 +297,7 @@ export default function Statistics () {
       const top = topProducts[0]
       suggestions.push({
         title: 'Fokus Produk Unggulan',
-        content: `${top.name} adalah produk dengan omzet tertinggi (Rp ${top.revenue.toLocaleString('id-ID')}). Pastikan stok aman dan pertimbangkan varian atau paket bundling.`,
+        content: `${top.name} adalah produk dengan omzet tertinggi (${formatCurrency(top.revenue)}). Pastikan stok aman dan pertimbangkan varian atau paket bundling.`,
         type: 'product'
       })
     }
@@ -304,13 +305,13 @@ export default function Statistics () {
     if (avgTransaction > 10000) {
       suggestions.push({
         title: 'Strategi Premium',
-        content: `Rata-rata nilai transaksi Rp ${avgTransaction.toLocaleString('id-ID')} cukup tinggi. Pertimbangkan peningkatan margin atau penambahan produk premium.`,
+        content: `Rata-rata nilai transaksi ${formatCurrency(avgTransaction)} cukup tinggi. Pertimbangkan peningkatan margin atau penambahan produk premium.`,
         type: 'pricing'
       })
     } else {
       suggestions.push({
         title: 'Strategi Volume',
-        content: `Rata-rata nilai transaksi Rp ${avgTransaction.toLocaleString('id-ID')} relatif rendah. Fokus ke volume dengan diskon kuantitas atau promo bundling.`,
+        content: `Rata-rata nilai transaksi ${formatCurrency(avgTransaction)} relatif rendah. Fokus ke volume dengan diskon kuantitas atau promo bundling.`,
         type: 'volume'
       })
     }
@@ -338,6 +339,49 @@ export default function Statistics () {
     }
   }
 
+  const exportToCSV = () => {
+    const filteredSales = getFilteredSales()
+    
+    if (filteredSales.length === 0) {
+      if (showError) {
+        showError('Tidak ada data untuk diexport pada periode ini')
+      }
+      return
+    }
+
+    // Prepare CSV data
+    const headers = ['No', 'Order ID', 'Tanggal', 'Total', 'Items', 'Metode Pembayaran', 'Status']
+    const rows = filteredSales.map((sale, index) => [
+      index + 1,
+      sale.order_id || '-',
+      new Date(sale.timestamp).toLocaleString('id-ID'),
+      formatCurrency(Number(sale.total_amount || 0)),
+      sale.total_items || 0,
+      sale.payment_method || 'tunai',
+      sale.payment_status || 'completed'
+    ])
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    const periodLabel = getPeriodLabel()
+    const timestamp = new Date().toISOString().split('T')[0]
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', `Statistik_${periodLabel}_${timestamp}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const salesByDate = getSalesByDate()
   const topProducts = getTopProducts()
   const suggestions = getAISuggestions()
@@ -363,7 +407,7 @@ export default function Statistics () {
         </div>
       ) : (
         <>
-      {/* Filter Periode */}
+      {/* Filter Periode & Export Button */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
         <button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -374,11 +418,7 @@ export default function Statistics () {
             <h3 className="font-semibold text-gray-800">Filter Periode</h3>
             <span className="text-sm text-gray-500">({getPeriodLabel()})</span>
           </div>
-          {isFilterOpen ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
-          )}
+          {isFilterOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
         </button>
 
         <motion.div
@@ -467,7 +507,7 @@ export default function Statistics () {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Pendapatan</p>
-              <p className="text-lg font-bold text-gray-800 font-mono">Rp {totalRevenue.toLocaleString('id-ID')}</p>
+              <p className="text-lg font-bold text-gray-800 font-mono">{formatCurrency(totalRevenue)}</p>
             </div>
           </div>
         </motion.div>
@@ -484,7 +524,7 @@ export default function Statistics () {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Profit (perkiraan)</p>
-              <p className="text-lg font-bold text-gray-800 font-mono">Rp {totalProfit.toLocaleString('id-ID')}</p>
+              <p className="text-lg font-bold text-gray-800 font-mono">{formatCurrency(totalProfit)}</p>
             </div>
           </div>
         </motion.div>
@@ -548,7 +588,7 @@ export default function Statistics () {
                     />
                   </div>
                   <span className="w-28 text-xs font-mono text-gray-700 text-right">
-                    Rp {Math.round(revenue).toLocaleString('id-ID')}
+                    {formatCurrency(Math.round(revenue))}
                   </span>
                 </div>
               ))
@@ -588,7 +628,7 @@ export default function Statistics () {
                   </div>
                 </div>
                 <div className="text-right text-sm">
-                  <p className="font-mono font-semibold text-gray-800">Rp {p.revenue.toLocaleString('id-ID')}</p>
+                  <p className="font-mono font-semibold text-gray-800">{formatCurrency(p.revenue)}</p>
                   <p className="text-xs text-gray-500">Omzet</p>
                 </div>
               </div>
@@ -617,6 +657,49 @@ export default function Statistics () {
           </div>
         </div>
       )}
+      
+      {/* Export CSV Section */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <Package className="w-5 h-5 text-blue-600" />
+          <h3 className="font-semibold text-gray-800">Export Data Statistik</h3>
+        </div>
+        
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 mb-3">
+            Export data statistik penjualan ke file CSV untuk analisis lebih lanjut atau dokumentasi.
+          </p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 className="font-semibold text-blue-900 text-sm mb-2">Cara Menggunakan:</h4>
+            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+              <li>Pilih periode data yang ingin diexport menggunakan <strong>Filter Periode</strong> di atas</li>
+              <li>Klik tombol <strong>Export CSV</strong> di bawah ini</li>
+              <li>File CSV akan otomatis terdownload dengan nama <code className="bg-blue-100 px-1 rounded">Statistik_[Periode]_[Tanggal].csv</code></li>
+              <li>Buka file CSV menggunakan Excel, Google Sheets, atau aplikasi spreadsheet lainnya</li>
+            </ol>
+          </div>
+          
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <p className="text-xs text-gray-600">
+              <strong>Periode saat ini:</strong> <span className="text-blue-600 font-semibold">{getPeriodLabel()}</span>
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              <strong>Total data:</strong> {getFilteredSales().length} transaksi
+            </p>
+          </div>
+        </div>
+        
+        <button
+          type="button"
+          onClick={exportToCSV}
+          disabled={getFilteredSales().length === 0}
+          className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold transition-colors"
+        >
+          <Package className="w-5 h-5" />
+          {getFilteredSales().length === 0 ? 'Tidak Ada Data untuk Diexport' : 'Export CSV'}
+        </button>
+      </div>
         </>
       )}
     </div>

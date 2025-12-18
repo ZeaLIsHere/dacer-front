@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStockMonitor } from '../hooks/useStockMonitor'
 import { AlertTriangle, Eye, EyeOff, ChevronUp, ChevronDown, Package } from 'lucide-react'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function StockMonitorSystem () {
   const { 
@@ -92,7 +93,7 @@ export default function StockMonitorSystem () {
                       <div className="mt-2 pt-2 border-t border-blue-200">
                         <p className="text-xs text-gray-600 text-center">
                           Total Nilai: <span className="font-bold text-blue-600">
-                            Rp {stats.totalValue.toLocaleString('id-ID')}
+                            {formatCurrency(stats.totalValue)}
                           </span>
                         </p>
                       </div>
@@ -111,7 +112,7 @@ export default function StockMonitorSystem () {
                                 {product.nama}
                               </p>
                               <p className="text-xs text-gray-500">
-                                Rp {product.harga.toLocaleString('id-ID')}
+                                {formatCurrency(product.harga)}
                               </p>
                             </div>
                           </div>

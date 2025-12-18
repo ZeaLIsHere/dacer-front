@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ShoppingCart, Package, TrendingUp, Star } from 'lucide-react'
 import StatusBadge from './StatusBadge'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function ProductCard ({ product, onSell }) {
   const [isProcessing, setIsProcessing] = useState(false)
@@ -92,7 +93,7 @@ export default function ProductCard ({ product, onSell }) {
           <div className="flex items-center space-x-2 mb-2">
             <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-secondary)' }} />
             <p className="text-xl font-bold" style={{ color: 'var(--color-primary)' }}>
-              Rp {product.harga.toLocaleString('id-ID')}
+              {formatCurrency(product.harga)}
             </p>
           </div>
           

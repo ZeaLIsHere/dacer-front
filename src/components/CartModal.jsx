@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useCart } from '../contexts/CartContext'
 import { X, Plus, Minus, CreditCard, ShoppingCart, Calendar } from 'lucide-react'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
   const { cart, updateQuantity, removeItem, getTotalPrice, getTotalItems } = useCart()
@@ -69,7 +70,7 @@ export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
                   <div className="flex-1">
                     <h3 className="font-medium text-secondary text-sm">{item.nama}</h3>
                     <p className="text-primary font-bold">
-                      Rp {item.harga.toLocaleString('id-ID')}
+                      {formatCurrency(item.harga)}
                     </p>
                     <p className="text-xs text-gray-500">
                       Stok tersisa: {item.stok - item.quantity}
@@ -107,7 +108,7 @@ export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
 
                   <div className="text-right">
                     <p className="font-bold text-secondary">
-                      Rp {(item.harga * item.quantity).toLocaleString('id-ID')}
+                      {formatCurrency(item.harga * item.quantity)}
                     </p>
                   </div>
                 </motion.div>
@@ -123,7 +124,7 @@ export default function CartModal ({ onClose, onCheckout, onDebtCheckout }) {
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold text-secondary">Total:</span>
               <span className="text-xl font-bold text-primary">
-                Rp {getTotalPrice().toLocaleString('id-ID')}
+                {formatCurrency(getTotalPrice())}
               </span>
             </div>
 

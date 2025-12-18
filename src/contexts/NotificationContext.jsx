@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 const NotificationContext = createContext()
 
@@ -97,7 +98,7 @@ export function NotificationProvider ({ children }) {
     addNotification({
       type: 'transaction-success',
       title: 'Transaksi Berhasil',
-      message: `Pembayaran Rp ${total.toLocaleString('id-ID')} ${method === 'qris' ? 'via QRIS' : 'tunai'} berhasil`,
+      message: `Pembayaran ${formatCurrency(total)} ${method === 'qris' ? 'via QRIS' : 'tunai'} berhasil`,
       action: onViewDetails,
       actionText: 'Lihat Detail',
       color: 'green',
@@ -133,7 +134,7 @@ export function NotificationProvider ({ children }) {
     addNotification({
       type: 'debt-created',
       title: 'Hutang Baru Dicatat',
-      message: `Hutang untuk ${customerName || 'Pelanggan'} sebesar Rp ${Number(amount || 0).toLocaleString('id-ID')} telah dibuat`,
+      message: `Hutang untuk ${customerName || 'Pelanggan'} sebesar ${formatCurrency(Number(amount || 0))} telah dibuat`,
       action: onViewDebt,
       actionText: 'Lihat Hutang',
       color: 'orange',
@@ -146,8 +147,8 @@ export function NotificationProvider ({ children }) {
       type: 'debt-paid',
       title: remaining > 0 ? 'Pembayaran Hutang Tercatat' : 'Hutang Lunas',
       message: remaining > 0
-        ? `${customerName || 'Pelanggan'} membayar Rp ${Number(amountPaid || 0).toLocaleString('id-ID')}. Sisa Rp ${Number(remaining || 0).toLocaleString('id-ID')}.`
-        : `Hutang ${customerName || 'Pelanggan'} lunas. Pembayaran Rp ${Number(amountPaid || 0).toLocaleString('id-ID')}.`,
+        ? `${customerName || 'Pelanggan'} membayar ${formatCurrency(Number(amountPaid || 0))}. Sisa ${formatCurrency(Number(remaining || 0))}.`
+        : `Hutang ${customerName || 'Pelanggan'} lunas. Pembayaran ${formatCurrency(Number(amountPaid || 0))}.`,
       action: onViewDebt,
       actionText: 'Lihat Hutang',
       color: remaining > 0 ? 'blue' : 'green',

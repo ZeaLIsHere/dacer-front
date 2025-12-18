@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, Star, Calendar } from 'lucide-react'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function SalesInsights ({ sales, products }) {
   const insights = useMemo(() => {
@@ -102,7 +103,7 @@ export default function SalesInsights ({ sales, products }) {
           <div className="text-center p-3 bg-purple-50 rounded-lg">
             <p className="text-sm text-gray-600">Pendapatan Minggu Ini</p>
             <p className="text-lg font-bold text-purple-600">
-              Rp {insights.weeklyRevenue.toLocaleString('id-ID')}
+              {formatCurrency(insights.weeklyRevenue)}
             </p>
           </div>
         </div>

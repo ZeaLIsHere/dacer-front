@@ -1,55 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
+import { SUBSCRIPTION_PLANS } from '../constants/subscription'
 
-const SubscriptionContext = createContext()
-
-export function useSubscription () {
-  const context = useContext(SubscriptionContext)
-  if (!context) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider')
-  }
-  return context
-}
-
-// Subscription plans
-export const SUBSCRIPTION_PLANS = {
-  monthly: {
-    id: 'monthly',
-    name: 'Bulanan',
-    price: 49000, // Rp 49,000
-    priceDisplay: 'Rp 49.000',
-    duration: '1 bulan',
-    features: [
-      'Akses penuh AI Chatbot',
-      'Insight mingguan otomatis',
-      'Analisis bisnis mendalam',
-      'Strategi penjualan personal',
-      'Support prioritas'
-    ],
-    popular: false
-  },
-  yearly: {
-    id: 'yearly',
-    name: 'Tahunan',
-    price: 490000, // Rp 490,000 (2 bulan gratis)
-    priceDisplay: 'Rp 490.000',
-    originalPrice: 588000, // Rp 588,000
-    originalPriceDisplay: 'Rp 588.000',
-    duration: '12 bulan',
-    features: [
-      'Akses penuh AI Chatbot',
-      'Insight mingguan otomatis',
-      'Analisis bisnis mendalam',
-      'Strategi penjualan personal',
-      'Support prioritas',
-      '2 bulan GRATIS',
-      'Analisis prediktif',
-      'Laporan bulanan eksklusif'
-    ],
-    popular: true,
-    savings: 98000 // Rp 98,000
-  }
-}
+export const SubscriptionContext = createContext()
 
 export function SubscriptionProvider ({ children }) {
   const { currentUser } = useAuth()
@@ -159,11 +112,15 @@ export function SubscriptionProvider ({ children }) {
 
   // Check if feature is available
   const isFeatureAvailable = (feature) => {
+    // AI Chatbot is always available for all users
+    if (feature === 'ai_chatbot') {
+      return true
+    }
+    
     if (!hasActiveSubscription()) return false
     
     // Define feature access based on subscription
     const featureAccess = {
-      'ai_chatbot': true,
       'weekly_insights': true,
       'business_analysis': true,
       'sales_strategy': true,

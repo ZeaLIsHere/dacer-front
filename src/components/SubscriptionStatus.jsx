@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { Crown, Zap, AlertCircle, CheckCircle, Clock } from 'lucide-react'
-import { useSubscription } from '../contexts/SubscriptionContext'
+import { useSubscription } from '../hooks/useSubscription'
 
 const SubscriptionStatus = ({ onUpgrade }) => {
   const { getSubscriptionInfo, isFeatureAvailable } = useSubscription()

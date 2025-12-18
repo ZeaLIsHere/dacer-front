@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Check
 } from 'lucide-react'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function CollectiveQuantityModal ({ 
   isOpen, 
@@ -138,7 +139,8 @@ export default function CollectiveQuantityModal ({
       onClose()
     } catch (error) {
       console.error('Error confirming collective order:', error)
-      alert('❌ Gagal memproses pesanan. Silakan coba lagi.')
+      // TODO: Replace with proper toast notification
+      console.error('❌ Gagal memproses pesanan. Silakan coba lagi.')
     }
     
     setLoading(false)
@@ -213,10 +215,10 @@ export default function CollectiveQuantityModal ({
                             <p className="text-sm text-gray-600">{product.category}</p>
                             <div className="flex items-center space-x-2 mt-1">
                               <span className="text-sm text-gray-500 line-through">
-                                Rp {product.estimatedPrice.toLocaleString('id-ID')}
+                                {formatCurrency(product.estimatedPrice)}
                               </span>
                               <span className="text-sm font-medium text-green-600">
-                                Rp {(product.estimatedPrice * 0.8).toLocaleString('id-ID')}
+                                {formatCurrency(product.estimatedPrice * 0.8)}
                               </span>
                               <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                                 -20%
@@ -321,13 +323,13 @@ export default function CollectiveQuantityModal ({
                                 const qty = quantities[product.productName] || 1
                                 const updateType = updateTypes[product.productName] || 'manual'
                                 const actualQty = updateType === 'batch' ? qty * getBatchSize(product.productName) : qty
-                                return ((product.estimatedPrice * 0.8) * actualQty).toLocaleString('id-ID')
+                                return formatCurrency((product.estimatedPrice * 0.8) * actualQty)
                               })()}
                             </span>
                           </div>
                           {updateTypes[product.productName] === 'batch' && (
                             <div className="text-xs text-gray-500 mt-1">
-                              {quantities[product.productName] || 1} batch × {getBatchSize(product.productName)} unit × Rp {(product.estimatedPrice * 0.8).toLocaleString('id-ID')}
+                              {quantities[product.productName] || 1} batch × {getBatchSize(product.productName)} unit × {formatCurrency(product.estimatedPrice * 0.8)}
                             </div>
                           )}
                         </div>
@@ -347,13 +349,13 @@ export default function CollectiveQuantityModal ({
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-green-700">Total Harga Bulk:</span>
                       <span className="font-semibold text-green-800">
-                        Rp {calculateTotal().toLocaleString('id-ID')}
+                        {formatCurrency(calculateTotal())}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-green-700">Total Penghematan:</span>
                       <span className="font-semibold text-green-600">
-                        Rp {calculateSavings().toLocaleString('id-ID')}
+                        {formatCurrency(calculateSavings())}
                       </span>
                     </div>
                     <div className="pt-2 border-t border-green-300">

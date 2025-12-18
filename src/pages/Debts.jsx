@@ -5,29 +5,25 @@ import {
   Filter, 
   Calendar, 
   DollarSign, 
-  User, 
   Plus, 
-  TrendingUp, 
   CreditCard, 
   AlertCircle, 
   CheckCircle, 
   Clock, 
-  X,
   Printer 
 } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { useToast } from '../contexts/ToastContext'
-import { useNotification } from '../contexts/NotificationContext'
 import { API_BASE_URL } from '../apiClient'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 export default function Debts () {
   const { currentUser } = useAuth()
   const { currentStore } = useStore()
   const location = useLocation()
   const { showSuccess, showError } = useToast()
-  const { notifyDebtPaid, notifyDebtCreated } = useNotification()
   const [debts, setDebts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -213,16 +209,14 @@ export default function Debts () {
       setPaymentAmount('')
       setPaymentMethod('tunai')
       setSelectedDebt(null)
+      showSuccess('Pembayaran berhasil dicatat')
+      setLastPaymentData({
+        debtId: selectedDebt.id,
+        customerName: selectedDebt.customer_name || selectedDebt.customerName,
+        amountPaid: Number(paymentAmount),
+        remaining: Number(selectedDebt.amount) - newAmountPaid
+      })
       setShowPaymentSuccessModal(true)
-      showSuccess('Pembayaran hutang berhasil disimpan')
-
-      if (notifyDebtPaid) {
-        const amountPaidNow = Number(paymentAmount)
-        const remaining = Number(selectedDebt.amount) - (Number(selectedDebt.amount_paid) + amountPaidNow)
-        notifyDebtPaid(selectedDebt.customer_name || selectedDebt.customerName, amountPaidNow, remaining, () => {
-          // Fokuskan user pada halaman Debts, sudah di sini
-        })
-      }
     } catch (err) {
       console.error('Payment error:', err)
       showError('Gagal membayar hutang')
@@ -269,22 +263,22 @@ export default function Debts () {
             <h3>Detail Pembayaran:</h3>
             <div class="item">
               <span>Total Hutang:</span>
-              <span>Rp ${Number(paymentData.totalDebt).toLocaleString('id-ID')}</span>
+              <span>{formatCurrency(Number(paymentData.totalDebt))}</span>
             </div>
             <div class="item">
               <span>Sudah Dibayar (sebelumnya):</span>
-              <span>Rp ${Number(paymentData.paidBefore).toLocaleString('id-ID')}</span>
+              <span>{formatCurrency(Number(paymentData.paidBefore))}</span>
             </div>
             <div class="item">
               <span>Dibayar Sekarang:</span>
-              <span>Rp ${Number(paymentData.amountPaid).toLocaleString('id-ID')}</span>
+              <span>{formatCurrency(Number(paymentData.amountPaid))}</span>
             </div>
           </div>
           
           <div class="total">
             <div class="item">
               <span><strong>Sisa Hutang:</strong></span>
-              <span><strong>Rp ${Number(paymentData.remaining).toLocaleString('id-ID')}</strong></span>
+              <span><strong>{formatCurrency(Number(paymentData.remaining))}</strong></span>
             </div>
             <div class="item">
               <span>Status:</span>
@@ -597,11 +591,11 @@ export default function Debts () {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Total Utang</p>
-                    <p className="font-medium">Rp {Number(selectedDebt.amount).toLocaleString('id-ID')}</p>
+                    <p className="font-medium">{formatCurrency(Number(selectedDebt.amount))}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Sudah Dibayar</p>
-                    <p className="font-medium text-green-600">Rp {Number(selectedDebt.amount_paid).toLocaleString('id-ID')}</p>
+                    <p className="font-medium text-green-600">{formatCurrency(Number(selectedDebt.amount_paid))}</p>
                   </div>
                 </div>
                 <div>
@@ -617,7 +611,7 @@ export default function Debts () {
                   />
                   {paymentAmount && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Sisa setelah bayar: Rp {(Number(selectedDebt.amount) - Number(selectedDebt.amount_paid) - Number(paymentAmount)).toLocaleString('id-ID')}
+                      Sisa setelah bayar: {formatCurrency(Number(selectedDebt.amount) - Number(selectedDebt.amount_paid) - Number(paymentAmount))}
                     </p>
                   )}
                 </div>
@@ -757,7 +751,7 @@ export default function Debts () {
                 </div>
                 <h2 className="text-xl font-bold mb-2">Pembayaran Berhasil!</h2>
                 <p className="text-gray-600 mb-1">Hutang #{lastPaymentData.debtId}</p>
-                <p className="text-sm text-gray-500 mb-6">Dibayar: Rp {Number(lastPaymentData.amountPaid).toLocaleString('id-ID')}</p>
+                <p className="text-sm text-gray-500 mb-6">Dibayar: {formatCurrency(Number(lastPaymentData.amountPaid))}</p>
                 
                 <div className="flex gap-2">
                   <button
@@ -790,7 +784,6 @@ function CreateDebtForm ({ currentUser, currentStore, cartData, onSuccess, onClo
   const [amount, setAmount] = useState(cartData?.totalAmount || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { showSuccess, showError } = useToast()
-  const { notifyDebtCreated } = useNotification()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -801,7 +794,8 @@ function CreateDebtForm ({ currentUser, currentStore, cartData, onSuccess, onClo
 
     setIsSubmitting(true)
     try {
-      const payload = {
+      // Create debt record
+      const debtPayload = {
         userId: currentUser.id,
         storeId: currentStore.id,
         customer_name: customerName,
@@ -814,25 +808,56 @@ function CreateDebtForm ({ currentUser, currentStore, cartData, onSuccess, onClo
         total_items: cartData?.totalItems || null
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/debts`, {
+      const debtRes = await fetch(`${API_BASE_URL}/api/debts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(debtPayload)
       })
 
-      if (!res.ok) throw new Error('Failed to create debt')
+      if (!debtRes.ok) {
+        const errorText = await debtRes.text()
+        throw new Error(`Failed to create debt: ${errorText}`)
+      }
+
+      const debtData = await debtRes.json()
+
+      // Create sales record if cart data exists (from cashier)
+      if (cartData && cartData.items) {
+        const salesPayload = {
+          userId: currentUser.id,
+          storeId: currentStore.id,
+          customer_name: customerName,
+          payment_method: 'hutang',
+          total_amount: numericAmount,
+          total_items: cartData.totalItems,
+          items: cartData.items.map(item => ({
+            id: item.id,
+            nama: item.nama,
+            kategori: item.kategori,
+            quantity: item.quantity,
+            harga: item.harga,
+            subtotal: item.subtotal
+          })),
+          debt_id: debtData.debt?.id || debtData.id // Link to debt record
+        }
+
+        const salesRes = await fetch(`${API_BASE_URL}/api/sales`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(salesPayload)
+        })
+
+        if (!salesRes.ok) {
+          const errorText = await salesRes.text()
+          console.warn('Sales record creation failed:', errorText)
+        }
+      }
 
       await onSuccess()
       showSuccess('Hutang berhasil dibuat')
-
-      if (notifyDebtCreated) {
-        notifyDebtCreated(customerName, numericAmount, () => {
-          // Sudah berada di halaman Debts
-        })
-      }
     } catch (err) {
       console.error('Create debt error:', err)
-      showError('Gagal membuat hutang')
+      showError(err.message || 'Gagal membuat hutang')
     } finally {
       setIsSubmitting(false)
     }
@@ -871,7 +896,7 @@ function CreateDebtForm ({ currentUser, currentStore, cartData, onSuccess, onClo
             required
           />
           {cartData && (
-            <p className="text-xs text-gray-500 mt-1">Diambil dari total keranjang: Rp {cartData.totalAmount.toLocaleString('id-ID')}</p>
+            <p className="text-xs text-gray-500 mt-1">Diambil dari total keranjang: {formatCurrency(cartData.totalAmount)}</p>
           )}
         </div>
         <div>

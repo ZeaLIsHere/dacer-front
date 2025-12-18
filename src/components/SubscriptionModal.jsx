@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Check, Crown, Star, CreditCard, Gift } from "lucide-react"
-import { useSubscription } from "../contexts/SubscriptionContext"
+import { useSubscription } from "../hooks/useSubscription"
 import { useToast } from "../contexts/ToastContext"
 
 const SubscriptionModal = ({ isOpen, onClose }) => {
@@ -111,7 +111,7 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                   Konfirmasi Pembayaran
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Klik "Bayar" untuk melanjutkan proses berlangganan.
+                  Klik &quot;Bayar&quot; untuk melanjutkan proses berlangganan.
                 </p>
 
                 <div className="bg-gray-50 rounded-2xl p-6 mb-6">

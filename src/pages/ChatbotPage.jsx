@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useChatbot } from '../contexts/ChatbotContext'
-import { useSubscription } from '../contexts/SubscriptionContext'
+import { useSubscription } from '../hooks/useSubscription'
 import SubscriptionGate from '../components/SubscriptionGate'
 import SubscriptionModal from '../components/SubscriptionModal'
 
