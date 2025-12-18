@@ -165,12 +165,18 @@ export default function Dashboard () {
     if (!sales.length) return []
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
     const today = new Date()
+    // Get current day (0=Sunday, 1=Monday, etc.) and adjust for Indonesian week (Monday=0)
+    const currentDay = today.getDay() === 0 ? 6 : today.getDay() - 1
     const weekData = days.map((day, idx) => {
       const date = new Date(today)
-      date.setDate(today.getDate() - today.getDay() + idx)
+      // Calculate date for each day of the week (Monday=0)
+      date.setDate(today.getDate() - currentDay + idx)
       const daySales = sales.filter(s => {
         const saleDate = new Date(s.timestamp)
-        return saleDate.toDateString() === date.toDateString()
+        // Normalize both dates to midnight to avoid timezone issues
+        const normalizedSaleDate = new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate())
+        const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        return normalizedSaleDate.getTime() === normalizedDate.getTime()
       })
       return {
         day,
