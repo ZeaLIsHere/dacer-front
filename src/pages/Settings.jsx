@@ -1,21 +1,17 @@
 import React, { useState } from "react"
 import { motion } from "framer-motion"
-import CreateStoreModal from "../components/CreateStoreModal"
 import SubscriptionModal from "../components/SubscriptionModal"
 import SubscriptionStatus from "../components/SubscriptionStatus"
 import { useStore } from "../contexts/StoreContext"
 import {
   Settings as SettingsIcon,
   Smartphone,
-  Plus,
-  ChevronRight,
   Store,
   Crown
 } from "lucide-react"
 
 export default function Settings () {
   // Language selection removed — settings page is now focused on subscription status
-  const [showCreateStoreModal, setShowCreateStoreModal] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const getText = (id) => id
   const { currentStore } = useStore()
@@ -85,32 +81,6 @@ export default function Settings () {
             </p>
           </div>
         </div>
-
-        {/* Create New Store */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setShowCreateStoreModal(true)}
-          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <p className="font-medium">
-                {getText("Buat Toko Baru", "Create New Store")}
-              </p>
-              <p className="text-sm opacity-90">
-                {getText(
-                  "Tambah toko untuk bisnis yang berbeda",
-                  "Add store for different business"
-                )}
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5" />
-        </motion.button>
 
         {/* Current Store Info */}
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -186,12 +156,6 @@ export default function Settings () {
           </div>
         </div>
       </motion.div>
-
-      {/* Create Store Modal */}
-      <CreateStoreModal
-        isOpen={showCreateStoreModal}
-        onClose={() => setShowCreateStoreModal(false)}
-      />
 
       {/* Subscription Modal */}
       <SubscriptionModal
